@@ -1,8 +1,5 @@
 # simple-authx
 
-<<<<<<< HEAD
-A simplified, secure authentication package for Express applications with support for MongoDB, Redis, Postgres, and file-based storage.
-=======
 A simplified, secure authentication package for Express applications with support for MongoDB, Redis, Postgres, and file-based storage. ESM-only; Node >= 18.
 
 ## What this package does
@@ -15,26 +12,13 @@ A simplified, secure authentication package for Express applications with suppor
 - Storage options: File (default), Postgres, MongoDB, or Redis (tokens) with a file-backed user store
 - Passwords: bcrypt or argon2; policy/strength helpers available if using modules directly
 - Extra modules (manual wiring): MFA (TOTP), Social login (Google/GitHub presets), Session tracking with device/IP insights, rate limiting/IP reputation utilities
->>>>>>> f63ac94 (Add working createAuth wrapper with File/Postgres/Mongo/Redis support)
-
 
 ## Features
 
-- 🔐 Simple JWT-based authentication *(implemented)*
-- 🔄 Secure refresh token rotation *(implemented)*
-- 🔒 Password security with **bcrypt** and **argon2** *(both supported, configurable)*
-- 🚀 Multiple storage adapters: MongoDB, Redis, Postgres, File *(all implemented)*
-<<<<<<< HEAD
-- 📱 MFA support with TOTP *(implemented)*
-- 🌐 OAuth/Social login support *(Google & GitHub implemented; other providers not yet)*
-- 📊 Session management and tracking *(implemented)*
-- 🛡️ Advanced security features *(rate limiting, IP reputation, suspicious activity detection, device fingerprinting, audit logging implemented)*
-
-## Limitations / TODO
-
-- Only Google and GitHub OAuth are supported out of the box.
-- Documentation/examples for API usage are minimal.
-=======
+- 🔐 Simple JWT-based authentication (implemented)
+- 🔄 Secure refresh token rotation (implemented)
+- 🔒 Password security with bcrypt and argon2 (configurable)
+- 🚀 Multiple storage adapters: MongoDB, Redis, Postgres, File (all implemented)
 - 📱 MFA, 🌐 Social login, 📊 Sessions, 🛡️ Security modules available (manual wiring)
 
 ## Limitations / Notes
@@ -42,8 +26,6 @@ A simplified, secure authentication package for Express applications with suppor
 - `createAuth` focuses on core auth (register/login/refresh/logout) and JWT protection. MFA/Social/Sessions/Security managers are available but not auto-wired.
 - Only Google and GitHub OAuth strategies are provided as presets.
 - Redis adapter stores refresh tokens; example setup uses File storage for users by default. For large scale, provide a real user store.
->>>>>>> f63ac94 (Add working createAuth wrapper with File/Postgres/Mongo/Redis support)
-
 
 ## Installation
 
@@ -62,15 +44,6 @@ import { createAuth } from 'simple-authx';
 const app = express();
 app.use(express.json());
 
-<<<<<<< HEAD
-const auth = await createAuth({
-	mongodb: 'mongodb://localhost:27017/myapp',
-	security: { rateLimit: true, password: { minStrength: 3 } },
-	mfa: { issuer: 'MyApp' },
-	sessions: true
-});
-
-=======
 // Choose one storage option
 
 // 1) MongoDB (users + refresh tokens)
@@ -91,6 +64,12 @@ const auth = await createAuth({
 
 // 4) File-only (good for local/dev)
 // const auth = await createAuth({ file: './data/auth-data.json' });
+
+app.use('/auth', auth.routes);
+app.get('/profile', auth.protect, (req, res) => {
+  res.json({ user: req.user });
+});
+```
 
 ## Wiring optional modules
 
@@ -141,7 +120,7 @@ app.get('/auth/google', (req, res) => {
 app.get('/auth/google/callback', async (req, res) => {
   const { code } = req.query;
   const { tokens, profile } = await social.exchangeCode('google', code);
-  // Map profile → local user; then issue JWTs with auth.authManager
+  // Map profile → local user; then issue JWTs with your own flow
   res.json({ profile, tokens });
 });
 ```
@@ -152,7 +131,7 @@ app.get('/auth/google/callback', async (req, res) => {
 import { SessionManager } from 'simple-authx';
 
 // Use the same adapter used by createAuth (file/postgres/mongo/redis-backed user store)
-const sessions = new SessionManager(auth.auth.adapter || auth.adapter);
+const sessions = new SessionManager(auth.auth?.adapter || auth.adapter);
 
 app.post('/auth/sessions', auth.protect, async (req, res) => {
   const session = await sessions.createSession(req.user.userId, req);
@@ -202,12 +181,5 @@ app.get('/admin', auth.protect, requireRole('admin'), (req, res) => {
 
 app.get('/staff', auth.protect, requireAnyRole(['admin', 'moderator']), (req, res) => {
   res.json({ ok: true });
-});
-```
-
->>>>>>> f63ac94 (Add working createAuth wrapper with File/Postgres/Mongo/Redis support)
-app.use('/auth', auth.routes);
-app.get('/profile', auth.protect, (req, res) => {
-	res.json({ user: req.user });
 });
 ```

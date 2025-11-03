@@ -1,9 +1,6 @@
 import UAParser from 'ua-parser-js';
 import geoip from 'geoip-lite';
-<<<<<<< HEAD
-=======
 import crypto from 'crypto';
->>>>>>> f63ac94 (Add working createAuth wrapper with File/Postgres/Mongo/Redis support)
 
 export class SessionManager {
   constructor(store) {

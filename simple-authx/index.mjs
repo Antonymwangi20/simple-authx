@@ -6,13 +6,6 @@ import cookieParser from 'cookie-parser';
 
 import { AuthManager } from './src/core/auth.js';
 import { defaultHooks } from './src/core/hooks.js';
-<<<<<<< HEAD
-import { PostgresAdapter } from './src/adapters/postgres-adapter.js';
-import { FileAdapter } from './src/adapters/file-adapter.js';
-import { createSimplifiedAuth } from './src/simplified.js';
-
-export { AuthManager, defaultHooks, PostgresAdapter, FileAdapter };
-=======
 import { PostgresAdapter } from './src/adapters/postgresAdapter.mjs';
 import { FileAdapter } from './src/adapters/file-adapter.js';
 import { connectMongo, MongoAdapter } from './src/adapters/mongoAdapters.mjs';
@@ -25,28 +18,12 @@ import { SecurityManager } from './src/security/security.js';
 import { requireRole, requireAnyRole } from './src/core/rbac.js';
 
 export { AuthManager, defaultHooks, PostgresAdapter, FileAdapter, MongoAdapter, RedisAdapter, connectMongo, connectRedis, MFAProvider, SocialAuthProvider, SessionManager, SecurityManager, requireRole, requireAnyRole };
->>>>>>> f63ac94 (Add working createAuth wrapper with File/Postgres/Mongo/Redis support)
 
 // New simplified interface
 export const createAuth = createSimplifiedAuth;
 
-<<<<<<< HEAD
-if (typeof module !== 'undefined') {
-  module.exports = { AuthManager, defaultHooks, PostgresAdapter, FileAdapter }
-}
-=======
-// CommonJS exports are not provided; this package is ESM-only
->>>>>>> f63ac94 (Add working createAuth wrapper with File/Postgres/Mongo/Redis support)
 
 
-/**
- * AuthX factory (ESM)
- * config: {
- *   secret, refreshSecret,
- *   accessExpiresIn, refreshExpiresIn,
- *   saltRounds, cookieName
- * }
- */
 export default function AuthX(config = {}) {
   const {
     secret = process.env.JWT_SECRET || 'default_access_secret',

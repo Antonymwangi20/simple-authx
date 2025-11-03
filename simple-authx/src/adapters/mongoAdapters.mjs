@@ -1,10 +1,7 @@
 // mongoAdapters.mjs
 import mongoose from 'mongoose';
 import { createHash } from 'crypto';
-<<<<<<< HEAD
-=======
 import { hashPassword, verifyPassword } from '../utils/hash.js'
->>>>>>> f63ac94 (Add working createAuth wrapper with File/Postgres/Mongo/Redis support)
 
 function hashToken(token) {
   return createHash('sha256').update(token).digest('hex');
@@ -76,8 +73,6 @@ export function MongoTokenStore() {
     }
   };
 }
-<<<<<<< HEAD
-=======
 
 // Class adapter compatible with AuthManager
 export class MongoAdapter {
@@ -131,4 +126,3 @@ export class MongoAdapter {
     await TokenModel.deleteMany({ username: user.username })
   }
 }
->>>>>>> f63ac94 (Add working createAuth wrapper with File/Postgres/Mongo/Redis support)

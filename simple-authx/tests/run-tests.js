@@ -1,10 +1,6 @@
 // Comprehensive test runner for all adapters and features
 import assert from 'assert';
-<<<<<<< HEAD
-import { AuthManager } from '../src/auth.js';
-=======
 import { AuthManager } from '../src/core/auth.js';
->>>>>>> f63ac94 (Add working createAuth wrapper with File/Postgres/Mongo/Redis support)
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { FileAdapter } from '../src/adapters/file-adapter.js';
