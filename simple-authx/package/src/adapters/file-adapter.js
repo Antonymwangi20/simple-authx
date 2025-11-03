@@ -1,0 +1,68 @@
+// src/adapters/file-adapter.js
+import fs from 'fs/promises'
+import { hashPassword, verifyPassword } from '../utils/hash.js'
+import crypto from 'crypto'
+
+export class FileAdapter {
+  constructor(filename = './auth-data.json') {
+    this.filename = filename
+    this.data = { users: [], refreshTokens: [] }
+  }
+
+  async init() {
+    try {
+      const content = await fs.readFile(this.filename, 'utf-8')
+      this.data = JSON.parse(content)
+    } catch {
+      await this.save()
+    }
+  }
+
+  async save() {
+    await fs.writeFile(this.filename, JSON.stringify(this.data, null, 2))
+  }
+
+  async findUser(username) {
+    return this.data.users.find(u => u.username === username) || null
+  }
+
+  async createUser(username, password) {
+    const hash = await hashPassword(password)
+    const id = Date.now().toString()
+    const user = { id, username, password_hash: hash }
+    this.data.users.push(user)
+    await this.save()
+    return user
+  }
+
+  async verifyUser(username, password) {
+    const user = await this.findUser(username)
+    if (!user) return null
+    const ok = await verifyPassword(password, user.password_hash)
+    return ok ? user : null
+  }
+
+  async storeRefreshToken(userId, token, expiry) {
+    // store SHA-256 hash of token to avoid saving raw refresh tokens
+    const hash = crypto.createHash('sha256').update(token).digest('hex')
+    this.data.refreshTokens.push({ userId, token_hash: hash, expiresAt: expiry })
+    await this.save()
+  }
+
+  async findRefreshToken(token) {
+    // compare by SHA-256 hash against stored token_hash entries
+    const hash = crypto.createHash('sha256').update(token).digest('hex')
+    return this.data.refreshTokens.find(rt => rt.token_hash === hash) || null
+  }
+
+  async invalidateRefreshToken(token) {
+    const hash = crypto.createHash('sha256').update(token).digest('hex')
+    this.data.refreshTokens = this.data.refreshTokens.filter(rt => rt.token_hash !== hash)
+    await this.save()
+  }
+
+  async invalidateAllRefreshTokens(userId) {
+    this.data.refreshTokens = this.data.refreshTokens.filter(rt => rt.userId !== userId)
+    await this.save()
+  }
+}
