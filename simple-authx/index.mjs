@@ -1,4 +1,5 @@
 // index.mjs - ESM entry
+import express from "express";
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import cookie from 'cookie';
@@ -183,6 +184,17 @@ export default function AuthX(config = {}) {
     res.json({ message: 'Logged out' });
   }
 
+  const router = express.Router();
+
+  router.post("/register", registerHandler());
+  router.post("/login", loginHandler());
+  router.post("/refresh", refreshHandler);
+  router.post("/logout", logoutHandler);
+  router.get("/me", protect, (req, res) => {
+    res.json({ user: req.user });
+  });
+
+
   return {
     hashPassword,
     verifyPassword,
@@ -195,6 +207,7 @@ export default function AuthX(config = {}) {
     loginHandler,
     refreshHandler,
     logoutHandler,
-    middleware: [cookieParser()]
+    middleware: [cookieParser()],
+    router
   };
 }
