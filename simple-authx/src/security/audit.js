@@ -1,4 +1,8 @@
 import pino from 'pino';
+<<<<<<< HEAD
+=======
+import ms from 'ms';
+>>>>>>> f63ac94 (Add working createAuth wrapper with File/Postgres/Mongo/Redis support)
 
 export class AuditLogger {
   constructor(config = {}) {

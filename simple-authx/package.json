@@ -1,13 +1,21 @@
 {
   "name": "simple-authx",
+<<<<<<< HEAD
   "version": "1.0.0",
+=======
+  "version": "1.0.1",
+>>>>>>> f63ac94 (Add working createAuth wrapper with File/Postgres/Mongo/Redis support)
   "description": "A minimal Express authentication helper using JWT with multiple adapters, MFA, social auth, and security features.",
   "type": "module",
   "main": "index.mjs",
   "exports": {
     ".": {
+<<<<<<< HEAD
       "import": "./index.mjs",
       "require": "./index.cjs"
+=======
+      "import": "./index.mjs"
+>>>>>>> f63ac94 (Add working createAuth wrapper with File/Postgres/Mongo/Redis support)
     }
   },
   "keywords": [
@@ -15,12 +23,24 @@
     "auth",
     "jwt",
     "bcrypt",
+<<<<<<< HEAD
     "middleware"
+=======
+    "argon2",
+    "middleware",
+    "mfa",
+    "oauth",
+    "sessions",
+    "redis",
+    "postgres",
+    "mongodb"
+>>>>>>> f63ac94 (Add working createAuth wrapper with File/Postgres/Mongo/Redis support)
   ],
   "author": "Antony Mwangi",
   "license": "MIT",
   "repository": {
     "type": "git",
+<<<<<<< HEAD
     "url": "https://github.com/your-username/simple-authx"
   },
   "bugs": {
@@ -30,17 +50,36 @@
   "files": [
     "index.mjs",
     "index.cjs",
+=======
+    "url": "https://github.com/Antonymwangi20/simple-authx.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Antonymwangi20/simple-authx/issues"
+  },
+  "homepage": "https://github.com/Antonymwangi20/simple-authx#readme",
+  "files": [
+    "index.mjs",
+>>>>>>> f63ac94 (Add working createAuth wrapper with File/Postgres/Mongo/Redis support)
     "src",
     "README.md",
     "LICENSE"
   ],
   "engines": {
+<<<<<<< HEAD
     "node": ">=14"
   },
   "scripts": {
   "test": "node tests/run-tests.js",
     "init-db": "node scripts/init-db.mjs",
     "example": "node examples/express-server.mjs"
+=======
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node tests/run-tests.js",
+    "init-db": "node scripts/init-db.mjs",
+    "example": "node examples/demo.js"
+>>>>>>> f63ac94 (Add working createAuth wrapper with File/Postgres/Mongo/Redis support)
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

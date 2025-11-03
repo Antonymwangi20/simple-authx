@@ -1,6 +1,10 @@
 // mongoAdapters.mjs
 import mongoose from 'mongoose';
 import { createHash } from 'crypto';
+<<<<<<< HEAD
+=======
+import { hashPassword, verifyPassword } from '../utils/hash.js'
+>>>>>>> f63ac94 (Add working createAuth wrapper with File/Postgres/Mongo/Redis support)
 
 function hashToken(token) {
   return createHash('sha256').update(token).digest('hex');
@@ -72,3 +76,59 @@ export function MongoTokenStore() {
     }
   };
 }
+<<<<<<< HEAD
+=======
+
+// Class adapter compatible with AuthManager
+export class MongoAdapter {
+  constructor() {}
+
+  async findUser(username) {
+    const u = await UserModel.findOne({ username }).lean()
+    if (!u) return null
+    return { id: u._id.toString(), username: u.username, password_hash: u.password }
+  }
+
+  async createUser(username, password) {
+    const hash = await hashPassword(password)
+    const doc = await UserModel.create({ username, password: hash })
+    return { id: doc._id.toString(), username: doc.username, password_hash: hash }
+  }
+
+  async verifyUser(username, password) {
+    const u = await UserModel.findOne({ username })
+    if (!u) return null
+    const ok = await verifyPassword(password, u.password)
+    if (!ok) return null
+    return { id: u._id.toString(), username: u.username, password_hash: u.password }
+  }
+
+  async storeRefreshToken(userId, token, expiry) {
+    const user = await UserModel.findById(userId)
+    if (!user) throw new Error('User not found')
+    const hashed = hashToken(token)
+    await TokenModel.findOneAndUpdate(
+      { username: user.username },
+      { refreshToken: hashed, createdAt: new Date() },
+      { upsert: true }
+    )
+  }
+
+  async findRefreshToken(token) {
+    const hashed = hashToken(token)
+    const doc = await TokenModel.findOne({ refreshToken: hashed })
+    return doc || null
+  }
+
+  async invalidateRefreshToken(token) {
+    const hashed = hashToken(token)
+    await TokenModel.deleteOne({ refreshToken: hashed })
+  }
+
+  async invalidateAllRefreshTokens(userId) {
+    const user = await UserModel.findById(userId)
+    if (!user) return
+    await TokenModel.deleteMany({ username: user.username })
+  }
+}
+>>>>>>> f63ac94 (Add working createAuth wrapper with File/Postgres/Mongo/Redis support)
