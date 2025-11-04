@@ -268,7 +268,7 @@ async function testErrorHandling() {
     await auth.auth.refresh('invalid_token');
     assert(false, 'Invalid refresh should fail');
   } catch (err) {
-    assert(err.message.includes('Invalid') || err.message.includes('expired'), 
+    assert(err.message.includes('Expired or invalid refresh token'), 
       'Should throw invalid token error');
   }
   
