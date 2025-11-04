@@ -1,31 +1,46 @@
-// index.mjs - ESM entry
-import express from "express";
+// index.mjs - Main entry point for simple-authx
+// Unified API as primary export, legacy API still available
+
+// 🎯 PRIMARY API (Recommended)
+export { createAuth } from './src/core/unified-api.js';
+
+// 🔧 Core Components (for advanced usage)
+export { AuthManager } from './src/core/auth.js';
+export { defaultHooks } from './src/core/hooks.js';
+
+// 📦 Adapters
+export { PostgresAdapter } from './src/adapters/postgresAdapter.mjs';
+export { FileAdapter } from './src/adapters/file-adapter.js';
+export { connectMongo, MongoAdapter } from './src/adapters/mongoAdapters.mjs';
+export { connectRedis, RedisAdapter } from './src/adapters/redisAdapter.mjs';
+
+// 🔐 Security Modules
+export { MFAProvider } from './src/security/mfa.js';
+export { SocialAuthProvider } from './src/security/social.js';
+export { SessionManager } from './src/security/sessions.js';
+export { SecurityManager } from './src/security/security.js';
+export { PasswordManager } from './src/security/password.js';
+export { AuditLogger } from './src/security/audit.js';
+
+// 🛡️ Utilities
+export { requireRole, requireAnyRole } from './src/core/rbac.js';
+export { hashPassword, verifyPassword } from './src/utils/hash.js';
+
+// ⚠️ LEGACY API (Backwards Compatibility)
+// This is the old in-memory implementation
+// Still exported for existing users, but createAuth() is recommended
+import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import cookie from 'cookie';
 import cookieParser from 'cookie-parser';
 
-import { AuthManager } from './src/core/auth.js';
-import { defaultHooks } from './src/core/hooks.js';
-import { PostgresAdapter } from './src/adapters/postgresAdapter.mjs';
-import { FileAdapter } from './src/adapters/file-adapter.js';
-import { connectMongo, MongoAdapter } from './src/adapters/mongoAdapters.mjs';
-import { connectRedis, RedisAdapter } from './src/adapters/redisAdapter.mjs';
-import { createSimplifiedAuth } from './src/core/simplified.js';
-import { MFAProvider } from './src/security/mfa.js';
-import { SocialAuthProvider } from './src/security/social.js';
-import { SessionManager } from './src/security/sessions.js';
-import { SecurityManager } from './src/security/security.js';
-import { requireRole, requireAnyRole } from './src/core/rbac.js';
-
-export { AuthManager, defaultHooks, PostgresAdapter, FileAdapter, MongoAdapter, RedisAdapter, connectMongo, connectRedis, MFAProvider, SocialAuthProvider, SessionManager, SecurityManager, requireRole, requireAnyRole };
-
-// New simplified interface
-export const createAuth = createSimplifiedAuth;
-
-
-
 export default function AuthX(config = {}) {
+  console.warn(
+    '[AuthX] You are using the legacy API. Consider migrating to createAuth() for better features.\n' +
+    'See: https://github.com/Antonymwangi20/simple-authx#migration-guide'
+  );
+
   const {
     secret = process.env.JWT_SECRET || 'default_access_secret',
     refreshSecret = process.env.REFRESH_SECRET || 'default_refresh_secret',
@@ -137,38 +152,36 @@ export default function AuthX(config = {}) {
   }
 
   async function refreshHandler(req, res) {
-  const cookies = req.headers.cookie ? cookie.parse(req.headers.cookie) : req.cookies || {};
-  const oldRefresh = req.body?.refreshToken || cookies[cookieName];
-  if (!oldRefresh) return res.status(400).json({ error: 'Refresh token required' });
+    const cookies = req.headers.cookie ? cookie.parse(req.headers.cookie) : req.cookies || {};
+    const oldRefresh = req.body?.refreshToken || cookies[cookieName];
+    if (!oldRefresh) return res.status(400).json({ error: 'Refresh token required' });
 
-  const decoded = verifyRefresh(oldRefresh);
-  if (!decoded) return res.status(403).json({ error: 'Invalid refresh token' });
+    const decoded = verifyRefresh(oldRefresh);
+    if (!decoded) return res.status(403).json({ error: 'Invalid refresh token' });
 
-  const username = decoded.username;
-  const stored = await tokenStore.get(username);
-  if (stored !== oldRefresh) return res.status(403).json({ error: 'Refresh token not recognized' });
+    const username = decoded.username;
+    const stored = await tokenStore.get(username);
+    if (stored !== oldRefresh) return res.status(403).json({ error: 'Refresh token not recognized' });
 
-  const newAccess = signAccess({ username });
-  const newRefresh = signRefresh({ username });
+    const newAccess = signAccess({ username });
+    const newRefresh = signRefresh({ username });
 
-  // try rotating; if fails, force re-login
-  const rotated = tokenStore.rotate
-    ? await tokenStore.rotate(username, oldRefresh, newRefresh)
-    : (await tokenStore.set(username, newRefresh), true);
+    const rotated = tokenStore.rotate
+      ? await tokenStore.rotate(username, oldRefresh, newRefresh)
+      : (await tokenStore.set(username, newRefresh), true);
 
-  if (!rotated) return res.status(403).json({ error: 'Token reuse detected. Re-login required.' });
+    if (!rotated) return res.status(403).json({ error: 'Token reuse detected. Re-login required.' });
 
-  const cookieStr = cookie.serialize(cookieName, newRefresh, {
-    httpOnly: true,
-    secure: false,
-    sameSite: 'strict',
-    path: '/',
-    maxAge: 7 * 24 * 60 * 60
-  });
-  res.setHeader('Set-Cookie', cookieStr);
-  res.json({ accessToken: newAccess });
-}
-
+    const cookieStr = cookie.serialize(cookieName, newRefresh, {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60
+    });
+    res.setHeader('Set-Cookie', cookieStr);
+    res.json({ accessToken: newAccess });
+  }
 
   async function logoutHandler(req, res) {
     const cookies = (req.headers.cookie) ? cookie.parse(req.headers.cookie) : (req.cookies || {});
@@ -194,7 +207,6 @@ export default function AuthX(config = {}) {
     res.json({ user: req.user });
   });
 
-
   return {
     hashPassword,
     verifyPassword,
@@ -208,6 +220,7 @@ export default function AuthX(config = {}) {
     refreshHandler,
     logoutHandler,
     middleware: [cookieParser()],
-    router
+    router,
+    routes: router // Alias for consistency
   };
 }
