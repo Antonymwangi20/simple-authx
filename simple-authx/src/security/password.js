@@ -12,6 +12,29 @@ export class PasswordManager {
     this.hashAlgo = config.hashAlgo || 'bcrypt'; // 'bcrypt' or 'argon2'
   }
 
+  /**
+   * Check password strength without validation (non-throwing)
+   * @param {string} password - Password to check
+   * @param {string} username - Optional username for context
+   * @param {string} email - Optional email for context
+   * @returns {object} Password strength analysis
+   */
+  checkStrength(password, username, email) {
+    // Check password strength using zxcvbn
+    const inputs = [username, email].filter(Boolean);
+    const result = zxcvbn(password, inputs);
+    
+    return {
+      score: result.score, // 0-4 (0 = weak, 4 = strong)
+      feedback: {
+        warning: result.feedback.warning || '',
+        suggestions: result.feedback.suggestions || []
+      },
+      crackTime: result.crack_times_display.offline_fast_hashing_1e10_per_second,
+      crackTimeSeconds: result.crack_times_seconds.offline_fast_hashing_1e10_per_second
+    };
+  }
+
   async validatePassword(password, username, email) {
     // Check password strength using zxcvbn
     const result = zxcvbn(password, [username, email]);
