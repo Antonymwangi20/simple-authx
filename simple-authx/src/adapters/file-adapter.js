@@ -1,4 +1,3 @@
-// src/adapters/file-adapter.js
 import fs from 'fs/promises'
 import { hashPassword, verifyPassword } from '../utils/hash.js'
 import crypto from 'crypto'

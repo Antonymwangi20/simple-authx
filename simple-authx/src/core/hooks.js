@@ -1,4 +1,3 @@
-// src/core/hooks.js
 export const defaultHooks = {
   async onRegister(user) {
     console.log(`[hook] User registered: ${user.username}`)

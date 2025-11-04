@@ -1,4 +1,3 @@
-// scripts/migrate-token-raw-to-hash.mjs
 // Migrate any existing refresh_tokens.token column to token_hash (SHA-256) and drop the old column.
 
 import 'dotenv/config'

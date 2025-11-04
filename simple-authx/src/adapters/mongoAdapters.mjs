@@ -1,4 +1,3 @@
-// mongoAdapters.mjs
 import mongoose from 'mongoose';
 import { createHash } from 'crypto';
 import { hashPassword, verifyPassword } from '../utils/hash.js'

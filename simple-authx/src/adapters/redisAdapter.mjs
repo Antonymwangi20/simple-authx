@@ -1,4 +1,3 @@
-// redisAdapter.mjs
 import { createClient } from 'redis';
 import { createHash } from 'crypto';
 import { verifyPassword, hashPassword } from '../utils/hash.js'

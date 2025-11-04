@@ -1,4 +1,3 @@
-// examples/03-full-featured.js
 // Full-featured example with MFA, Social Login, Sessions, and all plugins
 
 import express from 'express';

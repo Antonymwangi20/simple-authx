@@ -1,4 +1,3 @@
-// src/core/auth.js
 import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
 

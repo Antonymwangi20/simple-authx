@@ -1,6 +1,3 @@
-// index.mjs - Main entry point for simple-authx
-// Unified API as primary export, legacy API still available
-
 // 🎯 PRIMARY API (Recommended)
 export { createAuth } from './src/core/unified-api.js';
 

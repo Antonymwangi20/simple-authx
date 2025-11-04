@@ -1,4 +1,3 @@
-// src/adapters/postgres-adapter.js
 import { hashPassword, verifyPassword } from '../utils/hash.js'
 import crypto from 'crypto'
 import pkg from 'pg'

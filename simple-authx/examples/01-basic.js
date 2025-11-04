@@ -1,4 +1,3 @@
-// examples/01-basic.js
 // Basic usage of simple-authx with in-memory storage
 
 import express from 'express';

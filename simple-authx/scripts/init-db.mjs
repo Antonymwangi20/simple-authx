@@ -1,4 +1,3 @@
-// scripts/init-db.mjs
 // Idempotent DB initialization script for simple-authx
 // Creates users and refresh_tokens tables (refresh_tokens stores token_hash)
 

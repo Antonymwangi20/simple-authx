@@ -1,4 +1,3 @@
-// examples/02-production.js
 // Production-ready setup with PostgreSQL, cookies, CSRF, and security features
 
 import express from 'express';

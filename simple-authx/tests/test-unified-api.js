@@ -1,4 +1,3 @@
-// test-unified-api.js
 // Comprehensive integration test for the unified API
 
 import assert from 'assert';
