@@ -16,7 +16,7 @@ export async function connectMongo(uri) {
 // --- Schemas ---
 const userSchema = new mongoose.Schema({
   username: { type: String, unique: true },
-  password: String,  // This stores the hashed password
+  password: String,
   createdAt: { type: Date, default: Date.now }
 });
 
@@ -78,128 +78,50 @@ export class MongoAdapter {
   constructor() {}
 
   async findUser(username) {
-    const user = await UserModel.findOne({ username }).lean();
-    if (!user) return null;
-    
-    // IMPORTANT: Return consistent format with password_hash field
-    return { 
-      id: user._id.toString(), 
-      username: user.username, 
-      password_hash: user.password  // Map 'password' field to 'password_hash'
-    };
+    const u = await UserModel.findOne({ username }).lean()
+    if (!u) return null
+    return { id: u._id.toString(), username: u.username, password_hash: u.password }
   }
 
   async createUser(username, password) {
-    // Hash the password before storing
-    const hash = await hashPassword(password);
-    
-    // Check if user already exists
-    const existing = await UserModel.findOne({ username });
-    if (existing) {
-      throw new Error('Username already exists');
-    }
-    
-    // Create new user with hashed password
-    const doc = await UserModel.create({ 
-      username, 
-      password: hash  // Store in 'password' field
-    });
-    
-    return { 
-      id: doc._id.toString(), 
-      username: doc.username, 
-      password_hash: hash 
-    };
+    const hash = await hashPassword(password)
+    const doc = await UserModel.create({ username, password: hash })
+    return { id: doc._id.toString(), username: doc.username, password_hash: hash }
   }
 
   async verifyUser(username, password) {
-    // Find user
-    const user = await UserModel.findOne({ username });
-    if (!user) {
-      console.log('[MongoAdapter] User not found:', username);
-      return null;
-    }
-    
-    // Debug logging (remove in production)
-    console.log('[MongoAdapter] Verifying user:', {
-      username: user.username,
-      hasPassword: !!user.password,
-      passwordLength: user.password?.length
-    });
-    
-    // Verify password against stored hash
-    const isValid = await verifyPassword(password, user.password);
-    
-    console.log('[MongoAdapter] Password verification result:', isValid);
-    
-    if (!isValid) {
-      return null;
-    }
-    
-    // Return user with consistent format
-    return { 
-      id: user._id.toString(), 
-      username: user.username, 
-      password_hash: user.password 
-    };
+    const u = await UserModel.findOne({ username })
+    if (!u) return null
+    const ok = await verifyPassword(password, u.password)
+    if (!ok) return null
+    return { id: u._id.toString(), username: u.username, password_hash: u.password }
   }
 
   async storeRefreshToken(userId, token, expiry) {
-    // Find user by ID to get username
-    const user = await UserModel.findById(userId);
-    if (!user) {
-      throw new Error('User not found');
-    }
-    
-    // Hash the refresh token before storing
-    const hashed = hashToken(token);
-    
-    // Store or update the token
+    const user = await UserModel.findById(userId)
+    if (!user) throw new Error('User not found')
+    const hashed = hashToken(token)
     await TokenModel.findOneAndUpdate(
       { username: user.username },
-      { 
-        refreshToken: hashed, 
-        createdAt: new Date() 
-      },
+      { refreshToken: hashed, createdAt: new Date() },
       { upsert: true }
-    );
+    )
   }
 
   async findRefreshToken(token) {
-    // Hash the incoming token to compare
-    const hashed = hashToken(token);
-    
-    // Find matching token
-    const doc = await TokenModel.findOne({ refreshToken: hashed });
-    
-    if (!doc) return null;
-    
-    // Get user to return userId
-    const user = await UserModel.findOne({ username: doc.username });
-    if (!user) return null;
-    
-    return { 
-      userId: user._id.toString(),
-      username: doc.username
-    };
+    const hashed = hashToken(token)
+    const doc = await TokenModel.findOne({ refreshToken: hashed })
+    return doc || null
   }
 
   async invalidateRefreshToken(token) {
-    const hashed = hashToken(token);
-    await TokenModel.deleteOne({ refreshToken: hashed });
+    const hashed = hashToken(token)
+    await TokenModel.deleteOne({ refreshToken: hashed })
   }
 
   async invalidateAllRefreshTokens(userId) {
-    // Find user to get username
-    const user = await UserModel.findById(userId);
-    if (!user) return;
-    
-    // Delete all tokens for this user
-    await TokenModel.deleteMany({ username: user.username });
-  }
-
-  // Optional: Close connection
-  async close() {
-    await mongoose.connection.close();
+    const user = await UserModel.findById(userId)
+    if (!user) return
+    await TokenModel.deleteMany({ username: user.username })
   }
 }
