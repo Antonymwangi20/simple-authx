@@ -8,7 +8,7 @@ function hashToken(token) {
 
 export async function connectMongo(uri) {
   if (mongoose.connection.readyState === 0) {
-    await mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+    await mongoose.connect(uri);
     console.log('[AuthX] Connected to MongoDB');
   }
 }
