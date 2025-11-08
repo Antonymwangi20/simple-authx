@@ -1,6 +1,9 @@
+// src/adapters/mongoAdapters.mjs
+// EMERGENCY FIX - Handles connection issues gracefully
+
 import mongoose from 'mongoose';
 import { createHash } from 'crypto';
-import { hashPassword, verifyPassword } from '../utils/hash.js'
+import { hashPassword, verifyPassword } from '../utils/hash.js';
 
 function hashToken(token) {
   return createHash('sha256').update(token).digest('hex');
@@ -8,28 +11,196 @@ function hashToken(token) {
 
 export async function connectMongo(uri) {
   if (mongoose.connection.readyState === 0) {
-    await mongoose.connect(uri);
-    console.log('[AuthX] Connected to MongoDB');
+    try {
+      await mongoose.connect(uri, {
+        serverSelectionTimeoutMS: 5000, // 5 second timeout
+        connectTimeoutMS: 10000,
+        socketTimeoutMS: 45000,
+      });
+      console.log('[AuthX] Connected to MongoDB');
+    } catch (err) {
+      console.error('[AuthX] MongoDB connection failed:', err.message);
+      throw new Error(`MongoDB connection failed: ${err.message}`);
+    }
   }
 }
 
 // --- Schemas ---
 const userSchema = new mongoose.Schema({
-  username: { type: String, unique: true },
-  password: String,
+  username: { type: String, unique: true, required: true, index: true },
+  password: { type: String, required: true },
   createdAt: { type: Date, default: Date.now }
-});
+}, { collection: 'authx_users' });
 
 const tokenSchema = new mongoose.Schema({
-  username: { type: String, unique: true },
-  refreshToken: String,
-  createdAt: { type: Date, default: Date.now, expires: 7 * 24 * 60 * 60 } // 7 days TTL
-});
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'AuthX_User', required: true },
+  tokenHash: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now, expires: 7 * 24 * 60 * 60 }
+}, { collection: 'authx_tokens' });
 
 const UserModel = mongoose.model('AuthX_User', userSchema);
 const TokenModel = mongoose.model('AuthX_Token', tokenSchema);
 
-// --- Adapters ---
+// Class adapter compatible with AuthManager
+export class MongoAdapter {
+  constructor() {
+    // Check connection on initialization
+    if (mongoose.connection.readyState !== 1) {
+      console.warn('[MongoAdapter] Warning: MongoDB not connected yet');
+    }
+  }
+
+  async findUser(username) {
+    try {
+      const user = await UserModel.findOne({ username }).lean().maxTimeMS(5000);
+      if (!user) return null;
+      
+      return { 
+        id: user._id.toString(), 
+        username: user.username, 
+        password_hash: user.password
+      };
+    } catch (err) {
+      console.error('[MongoAdapter] findUser error:', err.message);
+      throw new Error(`Database error: ${err.message}`);
+    }
+  }
+
+  async createUser(username, password) {
+    try {
+      // Check if user exists first
+      const existing = await UserModel.findOne({ username }).maxTimeMS(5000);
+      if (existing) {
+        throw new Error('Username already exists');
+      }
+      
+      // Hash password
+      const hash = await hashPassword(password);
+      
+      // Create user
+      const doc = await UserModel.create({ 
+        username, 
+        password: hash 
+      });
+      
+      console.log('[MongoAdapter] User created:', username);
+      
+      return { 
+        id: doc._id.toString(), 
+        username: doc.username, 
+        password_hash: hash 
+      };
+    } catch (err) {
+      console.error('[MongoAdapter] createUser error:', err.message);
+      if (err.code === 11000) {
+        throw new Error('Username already exists');
+      }
+      throw new Error(`Failed to create user: ${err.message}`);
+    }
+  }
+
+  async verifyUser(username, password) {
+    try {
+      // Find user with timeout
+      const user = await UserModel.findOne({ username }).maxTimeMS(5000);
+      
+      if (!user) {
+        console.log('[MongoAdapter] User not found:', username);
+        return null;
+      }
+      
+      // Verify password
+      const isValid = await verifyPassword(password, user.password);
+      
+      if (!isValid) {
+        console.log('[MongoAdapter] Invalid password for:', username);
+        return null;
+      }
+      
+      console.log('[MongoAdapter] User verified:', username);
+      
+      return { 
+        id: user._id.toString(), 
+        username: user.username, 
+        password_hash: user.password 
+      };
+    } catch (err) {
+      console.error('[MongoAdapter] verifyUser error:', err.message);
+      throw new Error(`Verification failed: ${err.message}`);
+    }
+  }
+
+  async storeRefreshToken(userId, token, expiry) {
+    try {
+      const hashed = hashToken(token);
+      
+      // Remove old tokens for this user
+      await TokenModel.deleteMany({ userId }).maxTimeMS(5000);
+      
+      // Store new token
+      await TokenModel.create({
+        userId,
+        tokenHash: hashed,
+        createdAt: new Date()
+      });
+      
+      console.log('[MongoAdapter] Refresh token stored for user:', userId);
+    } catch (err) {
+      console.error('[MongoAdapter] storeRefreshToken error:', err.message);
+      throw new Error(`Failed to store token: ${err.message}`);
+    }
+  }
+
+  async findRefreshToken(token) {
+    try {
+      const hashed = hashToken(token);
+      
+      const doc = await TokenModel.findOne({ tokenHash: hashed })
+        .maxTimeMS(5000);
+      
+      if (!doc) return null;
+      
+      return { 
+        userId: doc.userId.toString()
+      };
+    } catch (err) {
+      console.error('[MongoAdapter] findRefreshToken error:', err.message);
+      throw new Error(`Failed to find token: ${err.message}`);
+    }
+  }
+
+  async invalidateRefreshToken(token) {
+    try {
+      const hashed = hashToken(token);
+      await TokenModel.deleteOne({ tokenHash: hashed }).maxTimeMS(5000);
+      console.log('[MongoAdapter] Token invalidated');
+    } catch (err) {
+      console.error('[MongoAdapter] invalidateRefreshToken error:', err.message);
+      // Don't throw on logout
+    }
+  }
+
+  async invalidateAllRefreshTokens(userId) {
+    try {
+      await TokenModel.deleteMany({ userId }).maxTimeMS(5000);
+      console.log('[MongoAdapter] All tokens invalidated for user:', userId);
+    } catch (err) {
+      console.error('[MongoAdapter] invalidateAllRefreshTokens error:', err.message);
+      // Don't throw on cleanup
+    }
+  }
+
+  async close() {
+    try {
+      await mongoose.connection.close();
+      console.log('[MongoAdapter] Connection closed');
+    } catch (err) {
+      console.error('[MongoAdapter] close error:', err.message);
+    }
+  }
+}
+
+// Legacy functions (for backwards compatibility)
 export function MongoUserStore() {
   return {
     async get(username) {
@@ -46,82 +217,21 @@ export function MongoUserStore() {
 
 export function MongoTokenStore() {
   return {
-    async get(username) {
-      const tokenDoc = await TokenModel.findOne({ username });
-      return tokenDoc?.refreshToken || null;
+    async get(userId) {
+      const tokenDoc = await TokenModel.findOne({ userId });
+      return tokenDoc?.tokenHash || null;
     },
-    async set(username, refreshToken) {
+    async set(userId, refreshToken) {
       const hashedToken = hashToken(refreshToken);
       await TokenModel.findOneAndUpdate(
-        { username },
-        { refreshToken: hashedToken, createdAt: new Date() },
+        { userId },
+        { tokenHash: hashedToken, createdAt: new Date() },
         { upsert: true }
       );
       return refreshToken;
     },
-    async delete(username) {
-      return TokenModel.deleteOne({ username });
-    },
-    async rotate(username, oldToken, newToken) {
-      const tokenDoc = await TokenModel.findOne({ username });
-      if (!tokenDoc || tokenDoc.refreshToken !== hashToken(oldToken)) {
-        return false; // reject reused or invalid token
-      }
-      await this.set(username, newToken);
-      return true;
+    async delete(userId) {
+      return TokenModel.deleteMany({ userId });
     }
   };
-}
-
-// Class adapter compatible with AuthManager
-export class MongoAdapter {
-  constructor() {}
-
-  async findUser(username) {
-    const u = await UserModel.findOne({ username }).lean()
-    if (!u) return null
-    return { id: u._id.toString(), username: u.username, password_hash: u.password }
-  }
-
-  async createUser(username, password) {
-    const hash = await hashPassword(password)
-    const doc = await UserModel.create({ username, password: hash })
-    return { id: doc._id.toString(), username: doc.username, password_hash: hash }
-  }
-
-  async verifyUser(username, password) {
-    const u = await UserModel.findOne({ username })
-    if (!u) return null
-    const ok = await verifyPassword(password, u.password)
-    if (!ok) return null
-    return { id: u._id.toString(), username: u.username, password_hash: u.password }
-  }
-
-  async storeRefreshToken(userId, token, expiry) {
-    const user = await UserModel.findById(userId)
-    if (!user) throw new Error('User not found')
-    const hashed = hashToken(token)
-    await TokenModel.findOneAndUpdate(
-      { username: user.username },
-      { refreshToken: hashed, createdAt: new Date() },
-      { upsert: true }
-    )
-  }
-
-  async findRefreshToken(token) {
-    const hashed = hashToken(token)
-    const doc = await TokenModel.findOne({ refreshToken: hashed })
-    return doc || null
-  }
-
-  async invalidateRefreshToken(token) {
-    const hashed = hashToken(token)
-    await TokenModel.deleteOne({ refreshToken: hashed })
-  }
-
-  async invalidateAllRefreshTokens(userId) {
-    const user = await UserModel.findById(userId)
-    if (!user) return
-    await TokenModel.deleteMany({ username: user.username })
-  }
 }
