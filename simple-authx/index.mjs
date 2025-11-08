@@ -4,6 +4,7 @@ export { createAuth } from './src/core/unified-api.js';
 // 🔧 Core Components (for advanced usage)
 export { AuthManager } from './src/core/auth.js';
 export { defaultHooks } from './src/core/hooks.js';
+export { initializeAuth, getAuth, protect, isAuthInitialized } from './src/core/singleton.js';
 
 // 📦 Adapters
 export { PostgresAdapter } from './src/adapters/postgresAdapter.mjs';

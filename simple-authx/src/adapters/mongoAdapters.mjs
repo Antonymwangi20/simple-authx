@@ -1,6 +1,3 @@
-// src/adapters/mongoAdapters.mjs
-// EMERGENCY FIX - Handles connection issues gracefully
-
 import mongoose from 'mongoose';
 import { createHash } from 'crypto';
 import { hashPassword, verifyPassword } from '../utils/hash.js';
@@ -27,8 +24,10 @@ export async function connectMongo(uri) {
 
 // --- Schemas ---
 const userSchema = new mongoose.Schema({
-  username: { type: String, unique: true, required: true, index: true },
-  password: { type: String, required: true },
+  email: { type: String, unique: [true, 'Email must be unique'], required: [true, 'Email is required'], index: true, match: [/.+\@.+\..+/, 'Please fill a valid email address'] },
+  username: { type: String, unique: [true, 'Username must be unique'], required: [true, 'Username is required'], index: true },
+  phoneNumber: { type: String, unique: true, sparse: true },
+  password: { type: String, required: [true, 'Password is required'] },
   createdAt: { type: Date, default: Date.now }
 }, { collection: 'authx_users' });
 
