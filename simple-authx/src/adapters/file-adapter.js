@@ -21,24 +21,36 @@ export class FileAdapter {
     await fs.writeFile(this.filename, JSON.stringify(this.data, null, 2))
   }
 
-  async findUser(username) {
-    return this.data.users.find(u => u.username === username) || null
+  async findUser(identifier) {
+    return this.data.users.find(u => 
+      u.username === identifier || 
+      u.email === identifier || 
+      u.phoneNumber === identifier
+    ) || null;
   }
 
-  async createUser(username, password) {
-    const hash = await hashPassword(password)
-    const id = Date.now().toString()
-    const user = { id, username, password_hash: hash }
-    this.data.users.push(user)
-    await this.save()
-    return user
+  async createUser(userData) {
+    const { password, ...fields } = userData;
+    const hash = await hashPassword(password);
+    const id = Date.now().toString();
+    
+    const user = { 
+      id, 
+      password_hash: hash,
+      ...fields,
+      createdAt: new Date().toISOString()
+    };
+    
+    this.data.users.push(user);
+    await this.save();
+    return user;
   }
 
-  async verifyUser(username, password) {
-    const user = await this.findUser(username)
-    if (!user) return null
-    const ok = await verifyPassword(password, user.password_hash)
-    return ok ? user : null
+  async verifyUser(identifier, password) {
+    const user = await this.findUser(identifier);
+    if (!user) return null;
+    const ok = await verifyPassword(password, user.password_hash);
+    return ok ? user : null;
   }
 
   async storeRefreshToken(userId, token, expiry) {

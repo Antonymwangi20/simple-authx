@@ -22,20 +22,47 @@ export class AuthManager {
     return { accessToken, refreshToken }
   }
 
-  async register(username, password) {
-    if (!this.adapter) throw new Error('No database adapter configured')
-    const existing = await this.adapter.findUser(username)
-    if (existing) throw new Error('Username already exists')
-
-    const user = await this.adapter.createUser(username, password)
-    const tokens = this.generateTokens({ userId: user.id })
-    const decoded = jwt.decode(tokens.refreshToken)
-    await this.adapter.storeRefreshToken(user.id, tokens.refreshToken, new Date(decoded.exp * 1000))
-
-    // run hook
-    if (this.hooks.onRegister) await this.hooks.onRegister(user)
-
-    return { user, ...tokens }
+  async register(userData) {
+    if (!this.adapter) throw new Error('No database adapter configured');
+    
+    // Extract password and other fields
+    const { password, ...userFields } = userData;
+    
+    // Validate required fields
+    const config = this.config?.userFields || { identifiers: ['username'], required: ['username'] };
+    for (const field of config.required || ['username']) {
+      if (!userData[field]) {
+        throw new Error(`${field} is required`);
+      }
+    }
+    
+    // Check if user already exists (by any identifier)
+    for (const identifier of config.identifiers || ['username']) {
+      if (userData[identifier]) {
+        const existing = await this.adapter.findUser(userData[identifier]);
+        if (existing) {
+          throw new Error(`User with this ${identifier} already exists`);
+        }
+      }
+    }
+    
+    // Validate custom fields
+    if (config.validate) {
+      for (const [field, validator] of Object.entries(config.validate)) {
+        if (userData[field] && !validator(userData[field])) {
+          throw new Error(`Invalid ${field} format`);
+        }
+      }
+    }
+    
+    const user = await this.adapter.createUser(userData);
+    const tokens = this.generateTokens({ userId: user.id });
+    const decoded = jwt.decode(tokens.refreshToken);
+    await this.adapter.storeRefreshToken(user.id, tokens.refreshToken, new Date(decoded.exp * 1000));
+    
+    if (this.hooks.onRegister) await this.hooks.onRegister(user);
+    
+    return { user, ...tokens };
   }
 
   async login(username, password) {
@@ -53,14 +80,35 @@ export class AuthManager {
     return { user, ...tokens }
   }
 
+  async loginWithIdentifier(identifier, password) {
+  if (!this.adapter) throw new Error('No database adapter configured');
+  
+  // Try to find and verify user with the identifier
+  const user = await this.adapter.verifyUser(identifier, password);
+  if (!user) throw new Error('Invalid credentials');
+  
+  const tokens = this.generateTokens({ 
+    userId: user.id,
+    email: user.email,
+    username: user.username,
+    phoneNumber: user.phoneNumber
+  });
+  
+  const decoded = jwt.decode(tokens.refreshToken);
+  await this.adapter.storeRefreshToken(user.id, tokens.refreshToken, new Date(decoded.exp * 1000));
+  
+  if (this.hooks.onLogin) await this.hooks.onLogin(user);
+  
+  return { user, ...tokens };
+}
+
   async refresh(oldToken) {
     if (!this.adapter) throw new Error('No database adapter configured')
     // Attempt to find the refresh token in storage (adapters store hashed token)
     const stored = await this.adapter.findRefreshToken(oldToken)
 
     // If not found, it could be a reuse attack (token already rotated/deleted).
-    // We'll still attempt to verify the token to extract the user id and then
-    // perform a global invalidation for safety.
+    
     let decoded
     try {
       decoded = jwt.verify(oldToken, this.refreshSecret)

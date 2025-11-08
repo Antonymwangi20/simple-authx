@@ -24,12 +24,39 @@ export async function connectMongo(uri) {
 
 // --- Schemas ---
 const userSchema = new mongoose.Schema({
-  email: { type: String, unique: [true, 'Email must be unique'], required: [true, 'Email is required'], index: true, match: [/.+\@.+\..+/, 'Please fill a valid email address'] },
-  username: { type: String, unique: [true, 'Username must be unique'], required: [true, 'Username is required'], index: true },
-  phoneNumber: { type: String, unique: true, sparse: true },
-  password: { type: String, required: [true, 'Password is required'] },
-  createdAt: { type: Date, default: Date.now }
-}, { collection: 'authx_users' });
+  email: { 
+    type: String, 
+    unique: true, 
+    sparse: true,
+    index: true 
+  },
+  username: { 
+    type: String, 
+    unique: true, 
+    sparse: true,
+    index: true 
+  },
+  phoneNumber: { 
+    type: String, 
+    unique: true, 
+    sparse: true,
+    index: true 
+  },
+  password: { 
+    type: String, 
+    required: true 
+  },
+  // Custom fields (flexible schema)
+  metadata: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {}
+  }
+}, {
+  timestamps: true
+}, {
+  collection: 'authx_users',
+  strict: false // Allow additional fields
+});
 
 const tokenSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'AuthX_User', required: true },
@@ -49,15 +76,25 @@ export class MongoAdapter {
     }
   }
 
-  async findUser(username) {
+  async findUser(identifier) {
     try {
-      const user = await UserModel.findOne({ username }).lean().maxTimeMS(5000);
+      const user = await UserModel.findOne({
+        $or: [
+          { username: identifier },
+          { email: identifier },
+          { phoneNumber: identifier }
+        ]
+      }).lean().maxTimeMS(5000);
+      
       if (!user) return null;
       
       return { 
         id: user._id.toString(), 
-        username: user.username, 
-        password_hash: user.password
+        username: user.username,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        password_hash: user.password,
+        ...user.metadata
       };
     } catch (err) {
       console.error('[MongoAdapter] findUser error:', err.message);
@@ -65,34 +102,48 @@ export class MongoAdapter {
     }
   }
 
-  async createUser(username, password) {
+  async createUser(userData) {
     try {
-      // Check if user exists first
-      const existing = await UserModel.findOne({ username }).maxTimeMS(5000);
+      const { password, ...fields } = userData;
+      
+      // Check for existing user by any identifier
+      const existing = await UserModel.findOne({
+        $or: [
+          fields.username ? { username: fields.username } : null,
+          fields.email ? { email: fields.email } : null,
+          fields.phoneNumber ? { phoneNumber: fields.phoneNumber } : null
+        ].filter(Boolean)
+      }).maxTimeMS(5000);
+      
       if (existing) {
-        throw new Error('Username already exists');
+        throw new Error('User already exists');
       }
       
-      // Hash password
       const hash = await hashPassword(password);
       
-      // Create user
-      const doc = await UserModel.create({ 
-        username, 
-        password: hash 
-      });
+      // Separate known fields from custom fields
+      const { username, email, phoneNumber, ...customFields } = fields;
       
-      console.log('[MongoAdapter] User created:', username);
+      const doc = await UserModel.create({
+        username,
+        email,
+        phoneNumber,
+        password: hash,
+        metadata: customFields
+      });
       
       return { 
         id: doc._id.toString(), 
-        username: doc.username, 
-        password_hash: hash 
+        username: doc.username,
+        email: doc.email,
+        phoneNumber: doc.phoneNumber,
+        password_hash: hash,
+        ...customFields
       };
     } catch (err) {
       console.error('[MongoAdapter] createUser error:', err.message);
       if (err.code === 11000) {
-        throw new Error('Username already exists');
+        throw new Error('Username, email, or phone number already exists');
       }
       throw new Error(`Failed to create user: ${err.message}`);
     }

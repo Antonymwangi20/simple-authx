@@ -8,25 +8,41 @@ export class PostgresAdapter {
     this.pool = new Pool(config)
   }
 
-  async findUser(username) {
-    const { rows } = await this.pool.query('SELECT * FROM users WHERE username=$1', [username])
-    return rows[0] || null
-  }
-
-  async createUser(username, password) {
-    const hash = await hashPassword(password)
+  async findUser(identifier) {
+  // Try to find by username, email, or phone
     const { rows } = await this.pool.query(
-      'INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING *',
-      [username, hash]
-    )
-    return rows[0]
+      `SELECT * FROM users 
+      WHERE username=$1 OR email=$1 OR phone_number=$1 
+      LIMIT 1`,
+      [identifier]
+    );
+    return rows[0] || null;
   }
 
-  async verifyUser(username, password) {
-    const user = await this.findUser(username)
-    if (!user) return null
-    const ok = await verifyPassword(password, user.password_hash)
-    return ok ? user : null
+  async createUser(userData) {
+    const { password, ...fields } = userData;
+    const hash = await hashPassword(password);
+    
+    // Build dynamic INSERT query
+    const fieldNames = ['password_hash', ...Object.keys(fields)];
+    const fieldValues = [hash, ...Object.values(fields)];
+    const placeholders = fieldNames.map((_, i) => `$${i + 1}`).join(', ');
+    
+    const { rows } = await this.pool.query(
+      `INSERT INTO users (${fieldNames.join(', ')}) 
+      VALUES (${placeholders}) 
+      RETURNING *`,
+      fieldValues
+    );
+    
+    return rows[0];
+  }
+
+  async verifyUser(identifier, password) {
+    const user = await this.findUser(identifier);
+    if (!user) return null;
+    const ok = await verifyPassword(password, user.password_hash);
+    return ok ? user : null;
   }
 
   async storeRefreshToken(userId, token, expiry) {
