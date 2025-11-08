@@ -1,6 +1,6 @@
 {
   "name": "simple-authx",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "A minimal Express authentication helper using JWT with multiple adapters, MFA, social auth, and security features.",
   "type": "module",
   "main": "index.mjs",
