@@ -1,276 +1,575 @@
-# simple-authx
+# 🔐 simple-authx v2.0.6
 
-> **One Auth Package. Zero Boilerplate. Maximum Power.**
+**The simplest, most powerful authentication library for Node.js**
 
-A complete, production-ready authentication system for Express applications. From zero-config dev setup to enterprise-scale deployment in one API.
+Zero config to production-ready in seconds. One initialization. All the features.
 
 [![npm version](https://img.shields.io/npm/v/simple-authx.svg)](https://www.npmjs.com/package/simple-authx)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)]()
 
 ---
 
-## ✨ Features
-
-- 🚀 **Plug & Play** - Works out of the box with zero config
-- 🔐 **JWT Tokens** - Access + refresh token system with automatic rotation
-- 🔄 **Token Rotation** - Secure refresh token reuse detection
-- 🏪 **Multiple Storage** - Memory, File, Postgres, MongoDB, Redis
-- 🍪 **Cookie Auth** - HttpOnly cookies + CSRF protection
-- 📱 **MFA/2FA** - TOTP-based two-factor authentication
-- 🌐 **Social Login** - Google & GitHub OAuth presets
-- 📊 **Session Tracking** - Device fingerprinting & geo-IP
-- 🛡️ **Security** - Rate limiting, IP blocking, brute-force protection
-- 🔒 **Password Security** - Argon2/bcrypt with strength validation
-- 📝 **Audit Logging** - Complete activity tracking
-- 🎨 **Plugin System** - Enable only what you need
-
----
-
-## 📦 Installation
+## 🚀 Quick Start (Modern Pattern)
 
 ```bash
 npm install simple-authx
 ```
 
-**Requirements:** Node.js >= 18
+### **Singleton Pattern** (Recommended)
 
----
-
-## 🚀 Quick Start
-
-### **Zero Config** (Perfect for development)
+Initialize once in your main server file, then use `protect` anywhere:
 
 ```javascript
+// server.js - Initialize ONCE
 import express from 'express';
-import { createAuth } from 'simple-authx';
+import { initializeAuth, protect, getAuth } from 'simple-authx';
 
 const app = express();
 app.use(express.json());
 
-const auth = await createAuth();
-
-app.use('/auth', auth.routes);
-app.get('/profile', auth.protect, (req, res) => {
-  res.json({ user: req.user });
+// Initialize authentication (async operation)
+await initializeAuth({
+  storage: 'mongodb',
+  mongodb: process.env.MONGODB_URI
 });
+
+// Mount auth routes ONCE
+app.use('/auth', getAuth().routes);
 
 app.listen(3000);
 ```
----
-
-## 🏗️ Production Setup
-
-### **PostgreSQL** (Recommended for most apps)
 
 ```javascript
-const auth = await createAuth({
-  storage: 'postgres',
-  postgres: {
-    connectionString: process.env.DATABASE_URL
-  },
-  secret: process.env.JWT_SECRET,
-  refreshSecret: process.env.JWT_REFRESH_SECRET
+// routes/api.js - Use protect ANYWHERE
+import { protect } from 'simple-authx';
+
+router.get('/profile', protect, (req, res) => {
+  res.json({ user: req.user }); // ✅ Works automatically
+});
+
+router.get('/admin', protect, requireRole('admin'), (req, res) => {
+  res.json({ message: 'Admin only' });
 });
 ```
 
-**Setup database:**
-```bash
-npm run init-db  # Creates users & refresh_tokens tables
-```
+**Benefits:**
+- ✅ Initialize once, use everywhere
+- ✅ No auth instance passing between files
+- ✅ Cleaner, more maintainable code
+- ✅ Perfect for 95% of applications
 
-### **MongoDB**
+---
+
+## 🎯 Usage Patterns
+
+### Pattern 1: Singleton (Recommended)
+
+**Best for:** Most applications, microservices, standard REST APIs
 
 ```javascript
-const auth = await createAuth({
+import { initializeAuth, protect, getAuth } from 'simple-authx';
+
+// server.js
+await initializeAuth({
+  storage: 'mongodb',
+  mongodb: process.env.MONGODB_URI,
+  secret: process.env.JWT_SECRET
+});
+
+app.use('/auth', getAuth().routes);
+
+// Any route file
+import { protect } from 'simple-authx';
+app.get('/protected', protect, handler);
+```
+
+---
+
+### Pattern 2: Instance-Based (Advanced)
+
+**Best for:** Multi-tenant apps, multiple auth configs, complex setups
+
+```javascript
+import { createAuth } from 'simple-authx';
+
+// auth.js - Create and export
+export const auth = await createAuth({
+  storage: 'mongodb',
+  mongodb: process.env.MONGODB_URI
+});
+
+// routes/api.js - Import and use
+import { auth } from '../auth.js';
+app.get('/protected', auth.protect, handler);
+```
+
+**When to use:**
+- Multiple auth instances needed
+- Different auth configs per tenant
+- Complex microservice architectures
+
+---
+
+## ✨ Features
+
+### 🎯 **Core Features**
+- 🔑 JWT-based authentication (access + refresh tokens)
+- 🔄 Automatic token rotation & reuse detection
+- 🍪 Cookie-based auth with CSRF protection
+- 📦 Multiple storage (Memory, File, Postgres, MongoDB, Redis)
+- 👤 **Flexible User Schema** - Use email, username, phone, or custom fields
+- 🔐 Multi-identifier login - Login with email OR username OR phone
+
+### 🔌 **Optional Plugins**
+- 🛡️ MFA/2FA support (TOTP, backup codes)
+- 🌐 Social login (Google, GitHub, Facebook, Twitter)
+- 👥 Session management with device tracking
+- 🔒 Password strength validation
+- 📊 Audit logging
+- 🚦 Rate limiting & security
+
+---
+
+## 📦 Storage Options
+
+### In-Memory (Development/Testing)
+```javascript
+await initializeAuth(); // Zero config!
+```
+
+### MongoDB (Recommended for Production)
+```javascript
+await initializeAuth({
   storage: 'mongodb',
   mongodb: process.env.MONGODB_URI
 });
 ```
 
-### **Redis** (High-performance tokens)
-
+### PostgreSQL
 ```javascript
-const auth = await createAuth({
-  storage: 'redis',
-  redis: { url: process.env.REDIS_URL },
-  file: './data/users.json' // User storage
+await initializeAuth({
+  storage: 'postgres',
+  postgres: {
+    connectionString: process.env.DATABASE_URL
+  }
 });
 ```
 
-### **File** (Single-instance apps)
-
+### File Storage (Single Instance Apps)
 ```javascript
-const auth = await createAuth({
+await initializeAuth({
   storage: 'file',
   file: './data/auth.json'
 });
+```
 
-// Or shorthand:
-const auth = await createAuth('./data/auth.json');
+### Redis (High Performance)
+```javascript
+await initializeAuth({
+  storage: 'redis',
+  redis: { url: process.env.REDIS_URL },
+  file: './data/users.json' // User data storage
+});
 ```
 
 ---
 
-## 🍪 Cookie-Based Auth (Web Apps)
+## 👤 Flexible User Schema
 
-Perfect for SPAs, eliminates XSS vulnerabilities:
+**NEW in v2.0:** Support for email, username, phone number, and custom fields!
+
+### Register with Email
+```javascript
+POST /auth/register
+{
+  "email": "user@example.com",
+  "password": "SecureP@ss123"
+}
+```
+
+### Register with Username
+```javascript
+POST /auth/register
+{
+  "username": "johndoe",
+  "password": "SecureP@ss123"
+}
+```
+
+### Register with Phone Number
+```javascript
+POST /auth/register
+{
+  "phoneNumber": "+1234567890",
+  "password": "SecureP@ss123"
+}
+```
+
+### Register with Multiple Identifiers
+```javascript
+POST /auth/register
+{
+  "email": "user@example.com",
+  "username": "johndoe",
+  "phoneNumber": "+1234567890",
+  "password": "SecureP@ss123"
+}
+```
+
+### Register with Custom Fields
+```javascript
+POST /auth/register
+{
+  "email": "user@example.com",
+  "password": "SecureP@ss123",
+  "firstName": "John",
+  "lastName": "Doe",
+  "age": 30,
+  "role": "user"
+}
+```
+
+### Configure Required Fields
+```javascript
+await initializeAuth({
+  storage: 'mongodb',
+  mongodb: process.env.MONGODB_URI,
+  userFields: {
+    identifiers: ['email', 'username', 'phoneNumber'],
+    required: ['email'], // Only email required
+    unique: ['email', 'username'] // Must be unique
+  }
+});
+```
+
+---
+
+## 🔐 Multi-Identifier Login
+
+Login with **any** identifier - no need to specify which one!
 
 ```javascript
-const auth = await createAuth({
-  storage: 'postgres',
-  postgres: { connectionString: process.env.DATABASE_URL },
-  
+// Login with email
+POST /auth/login
+{
+  "identifier": "user@example.com",
+  "password": "SecureP@ss123"
+}
+
+// Login with username
+POST /auth/login
+{
+  "identifier": "johndoe",
+  "password": "SecureP@ss123"
+}
+
+// Login with phone
+POST /auth/login
+{
+  "identifier": "+1234567890",
+  "password": "SecureP@ss123"
+}
+
+// Legacy format still supported
+POST /auth/login
+{
+  "username": "johndoe", // or "email" or "phoneNumber"
+  "password": "SecureP@ss123"
+}
+```
+
+The system automatically detects which field you're using!
+
+---
+
+## 🍪 Cookie-Based Auth (Recommended for Web Apps)
+
+Perfect for SPAs with same-domain backend:
+
+```javascript
+await initializeAuth({
+  storage: 'mongodb',
+  mongodb: process.env.MONGODB_URI,
   cookies: {
-    refresh: true,        // Store refresh token in HttpOnly cookie
-    secure: true,         // HTTPS only (false for localhost)
-    sameSite: 'strict'    // CSRF protection
+    refresh: true,      // Store refresh token in httpOnly cookie
+    secure: true,       // HTTPS only (production)
+    sameSite: 'strict'  // CSRF protection
   },
-  
   csrf: {
-    enabled: true,
+    enabled: true,      // Enable CSRF protection
     headerName: 'x-csrf-token'
   }
 });
 ```
 
-**Client-side usage:**
+**Frontend Usage:**
 ```javascript
-// Login
-const res = await fetch('/auth/login', {
+// Login - refresh token stored in cookie automatically
+const response = await fetch('/auth/login', {
   method: 'POST',
-  credentials: 'include', // Important!
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ username: 'alice', password: 'secret' })
+  body: JSON.stringify({ 
+    identifier: 'user@example.com',
+    password: 'SecureP@ss123' 
+  }),
+  credentials: 'include' // ⚠️ IMPORTANT for cookies
 });
 
-const { accessToken } = await res.json();
+const { accessToken } = await response.json();
 
-// Refresh (auto-sends cookie)
-const refresh = await fetch('/auth/refresh', {
+// Refresh - uses cookie automatically
+const refreshResponse = await fetch('/auth/refresh', {
   method: 'POST',
   credentials: 'include',
-  headers: { 'x-csrf-token': getCsrfToken() }
-});
-```
-
----
-
-## 🎨 Advanced Features (Plugins)
-
-Enable only the features you need:
-
-```javascript
-const auth = await createAuth({
-  storage: 'postgres',
-  postgres: { connectionString: process.env.DATABASE_URL },
-  
-  plugins: {
-    // 📱 Two-Factor Authentication
-    mfa: {
-      issuer: 'MyApp'
-    },
-    
-    // 🌐 Social Login
-    social: {
-      google: {
-        clientId: process.env.GOOGLE_CLIENT_ID,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        callbackURL: 'https://myapp.com/auth/google/callback'
-      },
-      github: {
-        clientId: process.env.GITHUB_CLIENT_ID,
-        clientSecret: process.env.GITHUB_CLIENT_SECRET,
-        callbackURL: 'https://myapp.com/auth/github/callback'
-      }
-    },
-    
-    // 📊 Session Tracking
-    sessions: {
-      trackDevices: true
-    },
-    
-    // 🛡️ Security (Rate Limiting, IP Blocking)
-    security: {
-      redis: { url: process.env.REDIS_URL },
-      maxFailedAttempts: 5,
-      attemptWindow: '15m'
-    },
-    
-    // 🔒 Password Strength & History
-    password: {
-      minStrength: 3,      // zxcvbn score 0-4
-      historyLimit: 5,     // Prevent reuse
-      hashAlgo: 'argon2'   // or 'bcrypt'
-    },
-    
-    // 📝 Audit Logging
-    audit: {
-      level: 'info'
-    }
+  headers: {
+    'x-csrf-token': getCsrfTokenFromCookie()
   }
 });
 ```
 
 ---
 
-## 🔐 Built-in Routes
+## 🔌 Plugins
 
-### **Core Routes** (Always Available)
+### MFA/2FA
+```javascript
+await initializeAuth({
+  plugins: {
+    mfa: {
+      issuer: 'MyApp',
+      algorithm: 'sha256'
+    }
+  }
+});
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/auth/register` | Register new user |
-| POST | `/auth/login` | Login with credentials |
-| POST | `/auth/refresh` | Refresh access token |
-| POST | `/auth/logout` | Logout & invalidate tokens |
+// In your routes
+import { getAuth } from 'simple-authx';
+const auth = getAuth();
 
-### **MFA Routes** (If plugin enabled)
+// Generate MFA secret
+const secret = auth.mfa.generateSecret();
+const qrCode = await auth.mfa.generateQRCode('user@example.com', secret);
+const backupCodes = auth.mfa.generateBackupCodes(); // 10 codes
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/auth/mfa/enable` | Generate QR code & backup codes |
-| POST | `/auth/mfa/verify` | Verify TOTP token |
+// Verify token
+const valid = auth.mfa.verifyToken(userToken, secret);
+```
 
-### **Social Routes** (If plugin enabled)
+### Social Login
+```javascript
+await initializeAuth({
+  plugins: {
+    social: {
+      google: {
+        clientId: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        callbackURL: 'http://localhost:3000/auth/google/callback'
+      },
+      github: {
+        clientId: process.env.GITHUB_CLIENT_ID,
+        clientSecret: process.env.GITHUB_CLIENT_SECRET
+      }
+    }
+  }
+});
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/auth/google` | Redirect to Google OAuth |
-| GET | `/auth/google/callback` | Google OAuth callback |
-| GET | `/auth/github` | Redirect to GitHub OAuth |
-| GET | `/auth/github/callback` | GitHub OAuth callback |
+// Routes automatically created:
+// GET /auth/google
+// GET /auth/google/callback
+// GET /auth/github
+// GET /auth/github/callback
+```
 
-### **Session Routes** (If plugin enabled)
+### Password Validation
+```javascript
+await initializeAuth({
+  plugins: {
+    password: {
+      minStrength: 3,           // 0-4 (zxcvbn score)
+      minLength: 10,
+      requireUppercase: true,
+      requireNumbers: true,
+      requireSpecialChars: true
+    }
+  }
+});
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/auth/sessions` | List all user sessions |
-| DELETE | `/auth/sessions/:id` | Revoke specific session |
+// Check password strength
+import { getAuth } from 'simple-authx';
+const strength = getAuth().password.checkStrength('MyP@ssw0rd123');
+// Returns: { score: 3, feedback: {...}, crackTime: '...' }
+```
+
+### Session Management
+```javascript
+await initializeAuth({
+  plugins: {
+    sessions: {
+      maxSessions: 5,        // Max concurrent sessions
+      trackLocation: true,   // Track IP/location
+      trackDevice: true      // Track device info
+    }
+  }
+});
+
+// List user sessions
+const auth = getAuth();
+const sessions = await auth.sessions.getUserSessions(userId);
+
+// Revoke specific session
+await auth.sessions.revokeSession(sessionId);
+
+// Revoke all other sessions
+await auth.sessions.revokeOtherSessions(userId, currentSessionId);
+```
+
+### Security & Rate Limiting
+```javascript
+await initializeAuth({
+  plugins: {
+    security: {
+      rateLimit: true,
+      maxFailedAttempts: 5,
+      windowMs: 15 * 60 * 1000,     // 15 minutes
+      blockDuration: 60 * 60 * 1000  // 1 hour
+    }
+  }
+});
+```
+
+### Audit Logging
+```javascript
+await initializeAuth({
+  plugins: {
+    audit: {
+      events: ['login', 'register', 'refresh', 'logout'],
+      storage: 'database',
+      retentionDays: 90
+    }
+  }
+});
+
+// Query audit logs
+const auth = getAuth();
+const logs = await auth.audit.query({
+  userId: 'user123',
+  event: 'login',
+  startDate: new Date('2024-01-01')
+});
+```
+
+---
+
+## 🛡️ Built-in Routes
+
+### Core Routes (Always Available)
+
+#### `POST /auth/register`
+```json
+// Request
+{
+  "email": "user@example.com",
+  "username": "johndoe",
+  "password": "SecureP@ss123",
+  "firstName": "John", // Custom field
+  "lastName": "Doe"    // Custom field
+}
+
+// Response
+{
+  "user": {
+    "id": "1",
+    "email": "user@example.com",
+    "username": "johndoe",
+    "firstName": "John",
+    "lastName": "Doe"
+  },
+  "accessToken": "eyJhbG...",
+  "refreshToken": "eyJhbG..." // (if not using cookies)
+}
+```
+
+#### `POST /auth/login`
+```json
+// Request (use any identifier)
+{
+  "identifier": "user@example.com", // email, username, or phone
+  "password": "SecureP@ss123"
+}
+
+// Response
+{
+  "user": {
+    "id": "1",
+    "email": "user@example.com",
+    "username": "johndoe"
+  },
+  "accessToken": "eyJhbG...",
+  "refreshToken": "eyJhbG..." // (if not using cookies)
+}
+```
+
+#### `POST /auth/refresh`
+```json
+// Request (if not using cookies)
+{
+  "refreshToken": "eyJhbG..."
+}
+
+// With cookies - just send CSRF token in header
+// x-csrf-token: abc123...
+
+// Response
+{
+  "accessToken": "eyJhbG...",
+  "refreshToken": "eyJhbG..." // New rotated token
+}
+```
+
+#### `POST /auth/logout`
+```json
+// Request (if not using cookies)
+{
+  "refreshToken": "eyJhbG..."
+}
+
+// Response
+{
+  "message": "Logged out successfully"
+}
+```
 
 ---
 
 ## 🛡️ Protecting Routes
 
+### Basic Protection
 ```javascript
-// Simple protection
-app.get('/profile', auth.protect, (req, res) => {
-  res.json({ user: req.user }); // { userId, username, ... }
+import { protect } from 'simple-authx';
+
+app.get('/profile', protect, (req, res) => {
+  res.json({ user: req.user }); // Access decoded token
 });
+```
 
-// Role-based access
-import { requireRole, requireAnyRole } from 'simple-authx';
+### Role-Based Access Control (RBAC)
+```javascript
+import { protect, requireRole, requireAnyRole } from 'simple-authx';
 
+// Single role required
 app.get('/admin', 
-  auth.protect, 
+  protect, 
   requireRole('admin'), 
   (req, res) => {
     res.json({ message: 'Admin only' });
   }
 );
 
+// Any of multiple roles
 app.get('/staff',
-  auth.protect,
-  requireAnyRole(['admin', 'moderator']),
+  protect,
+  requireAnyRole(['admin', 'moderator', 'editor']),
   (req, res) => {
     res.json({ message: 'Staff access' });
   }
@@ -279,132 +578,25 @@ app.get('/staff',
 
 ---
 
-## 📱 MFA Implementation Example
-
-```javascript
-// 1. Enable MFA for user
-app.post('/user/mfa/setup', auth.protect, async (req, res) => {
-  const secret = auth.mfa.generateSecret();
-  const qr = await auth.mfa.generateQRCode(req.user.username, secret);
-  const backupCodes = auth.mfa.generateBackupCodes();
-  
-  // Store in your database
-  await db.users.update(req.user.userId, {
-    mfaSecret: secret,
-    backupCodes
-  });
-  
-  res.json({ qr, backupCodes });
-});
-
-// 2. Verify during login
-app.post('/auth/login-with-mfa', async (req, res) => {
-  const { username, password, mfaToken } = req.body;
-  
-  const user = await auth.adapter.verifyUser(username, password);
-  if (!user) return res.status(401).json({ error: 'Invalid credentials' });
-  
-  const valid = auth.mfa.verifyToken(mfaToken, user.mfaSecret);
-  if (!valid) return res.status(401).json({ error: 'Invalid MFA token' });
-  
-  const tokens = auth.generateTokens({ userId: user.id });
-  res.json(tokens);
-});
-```
-
----
-
-## 🌐 Social Login Example
-
-```javascript
-// Auto-wired routes: /auth/google and /auth/google/callback
-
-// Custom callback handler
-app.get('/auth/google/callback', async (req, res) => {
-  const { code } = req.query;
-  const result = await auth.social.exchangeCode('google', code);
-  const profile = await auth.social.getUserProfile('google', result.access_token);
-  
-  // Find or create user
-  let user = await auth.adapter.findUser(profile.email);
-  if (!user) {
-    user = await auth.adapter.createUser(profile.email, randomPassword());
-  }
-  
-  const tokens = auth.generateTokens({ userId: user.id });
-  
-  // Redirect to frontend
-  res.redirect(`https://myapp.com/auth/callback?token=${tokens.accessToken}`);
-});
-```
-
----
-
-## 📊 Session Tracking Example
-
-```javascript
-// List all user devices
-app.get('/devices', auth.protect, async (req, res) => {
-  const sessions = await auth.sessions.getSessions(req.user.userId);
-  res.json({ devices: sessions });
-});
-
-// Revoke all other devices
-app.post('/devices/logout-all', auth.protect, async (req, res) => {
-  await auth.sessions.invalidateAllSessions(
-    req.user.userId,
-    req.headers['x-session-id'] // Keep current
-  );
-  res.json({ message: 'All other devices logged out' });
-});
-```
-
----
-
-## 🛡️ Rate Limiting Example
-
-```javascript
-// Global API rate limit
-const apiLimiter = auth.security.createRateLimiter({
-  window: '15m',
-  max: 100
-});
-
-app.use('/api', apiLimiter);
-
-// Login-specific rate limit
-const loginLimiter = auth.security.createRateLimiter({
-  window: '15m',
-  max: 5,
-  skipSuccessful: true
-});
-
-app.post('/auth/login', loginLimiter, /* handler */);
-
-// Check IP reputation
-app.post('/auth/login', async (req, res) => {
-  const reputation = await auth.security.getIPReputation(req.ip);
-  
-  if (reputation === 'blocked') {
-    return res.status(403).json({ error: 'IP blocked' });
-  }
-  
-  // Continue...
-});
-```
-
----
-
 ## 🔧 Configuration Options
 
 ```javascript
-const auth = await createAuth({
+await initializeAuth({
   // Storage
-  storage: 'postgres',              // 'memory' | 'file' | 'postgres' | 'mongodb' | 'redis'
-  postgres: { connectionString },
-  mongodb: 'mongodb://...',
-  redis: { url: 'redis://...' },
-  file: './data/auth.json',
+  storage: 'mongodb',
+  mongodb: process.env.MONGODB_URI,
+  
+  // User Schema (NEW!)
+  userFields: {
+    identifiers: ['email', 'username', 'phoneNumber'],
+    required: ['email'],
+    unique: ['email', 'username', 'phoneNumber'],
+    custom: {
+      firstName: { type: 'string', required: false },
+      lastName: { type: 'string', required: false },
+      role: { type: 'string', default: 'user' }
+    }
+  },
   
   // JWT Settings
   secret: process.env.JWT_SECRET,
@@ -415,53 +607,163 @@ const auth = await createAuth({
   // Cookie Settings
   cookies: {
     refresh: true,
-    secure: true,
+    secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
-    name: 'refreshToken'
+    domain: '.myapp.com'
   },
   
   // CSRF Protection
   csrf: {
     enabled: true,
-    cookieName: 'csrfToken',
     headerName: 'x-csrf-token'
   },
   
   // Plugins
   plugins: {
     mfa: { issuer: 'MyApp' },
-    social: { google: {...}, github: {...} },
+    social: { google: {...} },
     sessions: {},
-    security: { redis: {...}, maxFailedAttempts: 5 },
-    password: { minStrength: 3, hashAlgo: 'argon2' },
-    audit: { level: 'info' }
+    security: { rateLimit: true },
+    password: { minStrength: 3 },
+    audit: { events: ['login', 'register'] }
   },
   
-  // Hooks
+  // Lifecycle Hooks
   hooks: {
-    async onRegister(user) { /* ... */ },
-    async onLogin(user) { /* ... */ }
+    async onRegister(user) {
+      await sendWelcomeEmail(user.email);
+    },
+    async onLogin(user) {
+      await trackAnalytics('login', user.id);
+    }
   }
 });
 ```
 
 ---
 
-## 🧪 Testing
+## 📚 Complete Examples
 
+### Basic Setup (Development)
+```javascript
+import express from 'express';
+import { initializeAuth, protect, getAuth } from 'simple-authx';
+
+const app = express();
+app.use(express.json());
+
+// Zero config - uses in-memory storage
+await initializeAuth();
+
+app.use('/auth', getAuth().routes);
+app.get('/profile', protect, (req, res) => {
+  res.json({ user: req.user });
+});
+
+app.listen(3000);
+```
+
+### Production Setup (MongoDB)
+```javascript
+import express from 'express';
+import { initializeAuth, protect, getAuth } from 'simple-authx';
+import 'dotenv/config';
+
+const app = express();
+app.use(express.json());
+
+await initializeAuth({
+  storage: 'mongodb',
+  mongodb: process.env.MONGODB_URI,
+  secret: process.env.JWT_SECRET,
+  refreshSecret: process.env.JWT_REFRESH_SECRET,
+  
+  userFields: {
+    identifiers: ['email', 'username'],
+    required: ['email'],
+    custom: {
+      firstName: { type: 'string' },
+      lastName: { type: 'string' },
+      role: { type: 'string', default: 'user' }
+    }
+  },
+  
+  cookies: {
+    refresh: true,
+    secure: true,
+    sameSite: 'strict'
+  },
+  
+  csrf: { enabled: true },
+  
+  plugins: {
+    password: {
+      minStrength: 3,
+      minLength: 10
+    },
+    security: {
+      rateLimit: true,
+      maxFailedAttempts: 5
+    },
+    audit: {
+      events: ['login', 'register', 'failed_login']
+    }
+  }
+});
+
+app.use('/auth', getAuth().routes);
+app.get('/profile', protect, (req, res) => {
+  res.json({ user: req.user });
+});
+
+app.listen(3000);
+```
+
+---
+
+## 🔄 Migration from v1.x / Old Pattern
+
+### Old Pattern (Deprecated)
 ```javascript
 import { createAuth } from 'simple-authx';
 
+const auth = await createAuth({ ... });
+app.use('/auth', auth.routes);
+app.get('/protected', auth.protect, handler);
+```
+
+### New Pattern (Recommended)
+```javascript
+import { initializeAuth, protect, getAuth } from 'simple-authx';
+
+await initializeAuth({ ... });
+app.use('/auth', getAuth().routes);
+app.get('/protected', protect, handler);
+```
+
+See [MIGRATION.md](./MIGRATION.md) for detailed guide.
+
+---
+
+## 🧪 Testing
+
+```javascript
+import { initializeAuth, protect, resetAuth } from 'simple-authx';
+
 describe('Auth Tests', () => {
-  let auth;
-  
-  before(async () => {
-    auth = await createAuth(); // In-memory
+  beforeEach(async () => {
+    resetAuth(); // Clear singleton
+    await initializeAuth(); // In-memory for tests
   });
   
   it('should register and login', async () => {
-    await auth.auth.register('test', 'password');
-    const result = await auth.auth.login('test', 'password');
+    const auth = getAuth();
+    await auth.auth.register({
+      email: 'test@example.com',
+      password: 'TestP@ss123'
+    });
+    
+    const result = await auth.auth.login('test@example.com', 'TestP@ss123');
     assert(result.accessToken);
   });
 });
@@ -469,18 +771,66 @@ describe('Auth Tests', () => {
 
 ---
 
-## 📚 API Reference
+## 🔒 Security Best Practices
 
-### **`createAuth(config)`** → `Promise<AuthInstance>`
+### Production Checklist
+- ✅ Use strong random secrets (32+ characters)
+- ✅ Enable HTTPS (`cookies.secure = true`)
+- ✅ Enable CSRF protection
+- ✅ Use production database (MongoDB/Postgres)
+- ✅ Enable rate limiting
+- ✅ Set appropriate token expiry (15m access, 7d refresh)
+- ✅ Enable audit logging
+- ✅ Regular security updates (`npm audit`)
+- ✅ Use environment variables for secrets
+- ✅ Monitor authentication events
 
-Returns:
+### Security Features
+- 🔐 Password hashing (bcrypt/argon2)
+- 🔄 Automatic token rotation
+- 🚫 Token reuse detection
+- 🍪 httpOnly cookies
+- 🛡️ CSRF protection
+- 🚦 Rate limiting
+- 📊 Audit logging
+- 💉 SQL injection prevention
+- 🔓 XSS prevention
+
+---
+
+## 📖 API Reference
+
+### Singleton Exports
+
 ```typescript
-{
-  routes: Router            // Express router
-  router: Router            // Alias
-  protect: Middleware       // JWT verification
-  auth: AuthManager         // Core manager
-  adapter: Adapter          // Storage adapter
+// Initialize auth (call once in main server file)
+await initializeAuth(config?: AuthConfig): Promise<AuthInstance>
+
+// Get initialized instance
+getAuth(): AuthInstance
+
+// Protection middleware (use anywhere)
+protect: RequestHandler
+
+// Check if initialized
+isAuthInitialized(): boolean
+
+// Reset (for testing)
+resetAuth(): void
+
+// Role-based access
+requireRole(role: string): RequestHandler
+requireAnyRole(roles: string[]): RequestHandler
+```
+
+### Instance Methods (from `getAuth()`)
+
+```typescript
+interface AuthInstance {
+  routes: Router          // Express router with auth endpoints
+  protect: RequestHandler // Protection middleware
+  auth: AuthManager       // Core auth manager
+  adapter: Adapter        // Storage adapter
   
   // Plugins (if configured)
   mfa: MFAProvider | null
@@ -490,77 +840,71 @@ Returns:
   password: PasswordManager | null
   audit: AuditLogger | null
   
-  // Utilities
-  generateTokens(payload)
-  verifyAccess(token)
-  close()                   // Cleanup connections
+  // Utility methods
+  generateTokens(payload: TokenPayload): TokenPair
+  verifyAccess(token: string): DecodedToken
+  close(): Promise<void>
 }
 ```
 
 ---
 
-## 🔄 Migration Guide
-
-### **From Legacy API**
-
-```javascript
-import { createAuth } from 'simple-authx';
-const auth = await createAuth({ secret: '...' });
-app.use('/auth', auth.routes);
-```
-
-**Changes:**
-- ✅ Function is now async
-- ✅ Better storage options
-- ✅ Plugin system
-- ✅ Same route signatures
-
----
-
-## 🏆 Best Practices
-
-1. ✅ **Always use environment variables for secrets**
-2. ✅ **Use Postgres/MongoDB in production**
-3. ✅ **Enable rate limiting**
-4. ✅ **Implement MFA for sensitive apps**
-5. ✅ **Use cookies + CSRF for web apps**
-6. ✅ **Enable audit logging for compliance**
-7. ✅ **Track sessions for security**
-
----
-
 ## 🐛 Troubleshooting
 
-### **"router is not a function"**
+### "Auth not initialized"
 ```javascript
-// Wrong
-app.use('/auth', auth.router());
+// ❌ Wrong - didn't call initializeAuth
+import { protect } from 'simple-authx';
+app.get('/protected', protect, handler);
 
-// Correct
-app.use('/auth', auth.routes);
+// ✅ Correct - initialize first
+await initializeAuth();
+app.get('/protected', protect, handler);
 ```
 
-### **Database not initialized**
-```bash
-npm run init-db
+### "Cannot use await outside async function"
+```javascript
+// ❌ Wrong
+const app = express();
+await initializeAuth();
+
+// ✅ Correct - wrap in async function
+async function startServer() {
+  const app = express();
+  await initializeAuth();
+  app.listen(3000);
+}
+startServer();
+
+// ✅ Or use top-level await (Node.js 14.8+)
 ```
 
-### **Redis connection failed**
+### Database connection issues
 ```bash
+# MongoDB
+docker run -d -p 27017:27017 mongo
+
+# Postgres
+docker run -d -p 5432:5432 \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=authx \
+  postgres
+
+# Redis
 docker run -d -p 6379:6379 redis
 ```
 
 ---
 
-## 📄 License
+## 🤝 Contributing
 
-MIT © [Antony Mwangi](https://github.com/Antonymwangi20)
+Contributions welcome! Please read [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ---
 
-## 🤝 Contributing
+## 📄 License
 
-Contributions welcome! Please read our [Contributing Guide](CONTRIBUTING.md).
+MIT © [Antonymwangi20](https://github.com/Antonymwangi20)
 
 ---
 
@@ -570,15 +914,20 @@ Contributions welcome! Please read our [Contributing Guide](CONTRIBUTING.md).
 - **npm**: https://www.npmjs.com/package/simple-authx
 - **Issues**: https://github.com/Antonymwangi20/simple-authx/issues
 - **Examples**: See `examples/` folder
+- **Changelog**: [CHANGELOG.md](./CHANGELOG.md)
+- **Migration Guide**: [MIGRATION.md](./MIGRATION.md)
+- **Documentation**: https://simple-authx-lp.vercel.app/docs
+- **Contact**: antony254mm@gmail.com
+- **LinkedIn**: https://www.linkedin.com/in/antonymwangi20/
 
 ---
 
-**Built with 🔥 by a GENZ developer who hates auth boilerplate**
+## 🌟 Support
 
-**Package is still in BETA**
+If you find this library useful, please star it on GitHub! ⭐
 
-## WANTAM!!!! WADAU TAM NI JAMO SIKU ZOMBO😂😂✊🏽✊🏽✊🏽
+---
 
-**WANTAM!!!! 😡😤**
+**Made with ❤️ for developers who hate auth boilerplate**
 
-**ENJOY!  😁😊🎉**
+**WANTAM!!!! 🔥✊🏽**

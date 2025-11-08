@@ -149,9 +149,6 @@ export class MongoAdapter {
     }
   }
 
-  // src/adapters/mongoAdapters.mjs - Fixed verifyUser method
-// Replace the verifyUser method (around line 105) with this:
-
 async verifyUser(identifier, password) {
   try {
     console.log('[MongoAdapter] Verifying user:', identifier);

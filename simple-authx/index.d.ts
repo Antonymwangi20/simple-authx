@@ -1,37 +1,106 @@
-// Type definitions for simple-authx v2.0.0+
+// Type definitions for simple-authx v2.0.5+
 // Project: https://github.com/Antonymwangi20/simple-authx
 // Definitions by: Antony Mwangi <https://github.com/Antonymwangi20>
 
 import { Router, RequestHandler, Request, Response, NextFunction } from 'express';
 
-// ==================== Main API ====================
+// ==================== PRIMARY API (Singleton Pattern - RECOMMENDED) ====================
 
 /**
- * Create an authentication instance with flexible configuration
+ * Initialize authentication globally (call ONCE in your main server file)
+ * This is the RECOMMENDED pattern for most applications
+ * 
+ * @param config - Authentication configuration
+ * @returns Promise resolving to AuthInstance
+ * 
+ * @example
+ * // server.js - Initialize once
+ * import { initializeAuth, protect, getAuth } from 'simple-authx';
+ * 
+ * await initializeAuth({
+ *   storage: 'mongodb',
+ *   mongodb: process.env.MONGODB_URI,
+ *   secret: process.env.JWT_SECRET
+ * });
+ * 
+ * app.use('/auth', getAuth().routes);
+ * 
+ * // routes/api.js - Use anywhere
+ * import { protect } from 'simple-authx';
+ * 
+ * router.get('/profile', protect, (req, res) => {
+ *   res.json({ user: req.user });
+ * });
+ */
+export function initializeAuth(config?: AuthConfig): Promise<AuthInstance>;
+
+/**
+ * Get the initialized auth instance
+ * @throws Error if initializeAuth() has not been called
+ * 
+ * @example
+ * import { getAuth } from 'simple-authx';
+ * 
+ * const auth = getAuth();
+ * app.use('/auth', auth.routes);
+ */
+export function getAuth(): AuthInstance;
+
+/**
+ * Protection middleware - can be imported and used directly
+ * Requires initializeAuth() to be called first
+ * 
+ * @example
+ * import { protect } from 'simple-authx';
+ * 
+ * router.get('/profile', protect, (req, res) => {
+ *   res.json({ user: req.user });
+ * });
+ */
+export const protect: RequestHandler;
+
+/**
+ * Check if auth has been initialized
+ * @returns True if initializeAuth() has been called
+ */
+export function isAuthInitialized(): boolean;
+
+/**
+ * Reset the auth instance (useful for testing)
+ * 
+ * @example
+ * import { resetAuth, initializeAuth } from 'simple-authx';
+ * 
+ * beforeEach(async () => {
+ *   resetAuth();
+ *   await initializeAuth(); // Fresh instance for each test
+ * });
+ */
+export function resetAuth(): void;
+
+// ==================== ALTERNATIVE API (Instance Pattern - Advanced) ====================
+
+/**
+ * Create an authentication instance (for advanced use cases)
+ * Use this when you need multiple auth instances or more control
+ * 
  * @param config - Authentication configuration or file path for file storage
  * @returns Promise resolving to AuthInstance
  * 
  * @example
- * // Zero config (in-memory)
- * const auth = await createAuth();
+ * // auth.js - Create and export
+ * import { createAuth } from 'simple-authx';
  * 
- * @example
- * // File storage
- * const auth = await createAuth('./data/auth.json');
+ * export const auth = await createAuth({
+ *   storage: 'mongodb',
+ *   mongodb: process.env.MONGODB_URI
+ * });
  * 
- * @example
- * // Production setup with all features
- * const auth = await createAuth({
- *   storage: 'postgres',
- *   postgres: { connectionString: process.env.DATABASE_URL },
- *   userFields: {
- *     identifiers: ['email', 'username', 'phoneNumber'],
- *     required: ['email']
- *   },
- *   plugins: {
- *     mfa: { issuer: 'MyApp' },
- *     social: { google: {...} }
- *   }
+ * // routes/api.js - Import and use
+ * import { auth } from '../auth.js';
+ * 
+ * router.get('/profile', auth.protect, (req, res) => {
+ *   res.json({ user: req.user });
  * });
  */
 export function createAuth(config?: AuthConfig | string): Promise<AuthInstance>;
@@ -58,7 +127,7 @@ export interface AuthConfig {
   /** Custom storage adapter */
   adapter?: Adapter;
   
-  // User Schema Configuration
+  // User Schema Configuration (NEW in v2.0!)
   /** Configure user fields and identifiers */
   userFields?: UserFieldsConfig;
   
@@ -526,6 +595,9 @@ export interface TokenPayload {
   /** Email (optional) */
   email?: string;
   
+  /** Phone number (optional) */
+  phoneNumber?: string;
+  
   /** User role for RBAC */
   role?: string;
   
@@ -569,10 +641,11 @@ export class AuthManager {
   
   /**
    * Register a new user
-   * @param userData - User registration data
+   * @param userData - User registration data (object or username for backward compat)
+   * @param password - Password (only used in legacy format)
    * @returns User and tokens
    */
-  register(userData: UserRegistrationData): Promise<LoginResult>;
+  register(userData: UserRegistrationData | string, password?: string): Promise<LoginResult>;
   
   /**
    * Login with identifier (email/username/phone)
@@ -583,8 +656,8 @@ export class AuthManager {
   loginWithIdentifier(identifier: string, password: string): Promise<LoginResult>;
   
   /**
-   * Login with username (legacy method)
-   * @param username - Username
+   * Login with username (legacy method, same as loginWithIdentifier)
+   * @param username - Username (or email/phone - auto-detected)
    * @param password - User password
    * @returns User and tokens
    */
@@ -612,6 +685,7 @@ export interface AuthManagerOptions {
   accessExpiry?: string;
   refreshExpiry?: string;
   hooks?: HooksConfig;
+  config?: AuthConfig;
 }
 
 // ==================== Storage Adapters ====================
@@ -983,392 +1057,18 @@ export class PasswordManager {
    * @returns True if password matches
    */
   verifyPassword(password: string, hash: string): Promise<boolean>;
-  
-  /**
-   * Generate password reset token
-   * @returns Token and expiration date
-   */
-  generateResetToken(): { token: string; expires: Date };
-  
-  /**
-   * Check if password was used recently
-   * @param password - Password to check
-   * @param history - Array of previous password hashes
-   */
-  checkPasswordHistory(password: string, history: string[]): Promise<void>;
-  
-  /**
-   * Enforce password policy rules
-   * @param username - Username
-   * @param password - Password
-   * @param userData - Additional user data
-   * @returns True if password passes policy
-   */
-  enforcePasswordPolicy(username: string, password: string, userData?: any): Promise<boolean>;
-  
-  /**
-   * Generate temporary password
-   * @returns Random secure password
-   */
-  generateTemporaryPassword(): string;
-}
+} 
 
 export class AuditLogger {
   constructor(config?: AuditConfig);
   
   /**
-   * Log an authentication event
-   * @param event - Event data
-   * @returns Audit entry
+   * Log an audit event
+   * @param event - Event name
+   * @param userId - User ID (if applicable)
+   * @param metadata - Additional metadata
    */
-  log(event: AuditEvent): Promise<AuditEntry>;
-  
-  /**
-   * Query audit logs
-   * @param filters - Query filters
-   * @returns Array of audit entries
-   */
-  query(filters?: AuditQueryFilters): Promise<AuditEntry[]>;
-  
-  /**
-   * Get audit trail for filters
-   * @param filters - Query filters
-   * @returns Array of audit entries
-   */
-  getAuditTrail(filters?: AuditQueryFilters): Promise<AuditEntry[]>;
-  
-  /**
-   * Get user activity
-   * @param username - Username
-   * @param options - Query options
-   * @returns Array of audit entries
-   */
-  getUserActivity(username: string, options?: QueryOptions): Promise<AuditEntry[]>;
-}
-
-export interface AuditEvent {
-  type: string;
-  username?: string;
-  success: boolean;
-  ip?: string;
-  userAgent?: string;
-  details?: string;
-  sessionId?: string;
-  location?: any;
-  device?: any;
-  risk?: string;
-}
-
-export interface AuditEntry extends AuditEvent {
-  timestamp: Date;
-  event: string;
-  user?: string;
-  metadata?: any;
-}
-
-export interface AuditQueryFilters {
-  userId?: string;
-  event?: string;
-  startDate?: Date;
-  endDate?: Date;
-  success?: boolean;
-  ip?: string;
-}
-
-export interface QueryOptions {
-  limit?: number;
-  offset?: number;
-  sortBy?: string;
-  sortDir?: 'asc' | 'desc';
-}
-
-// ==================== Utility Functions ====================
-
-/**
- * Middleware to require specific role
- * @param role - Required role
- * @returns Express middleware
- * 
- * @example
- * app.get('/admin', auth.protect, requireRole('admin'), (req, res) => {
- *   res.json({ message: 'Admin only' });
- * });
- */
-export function requireRole(role: string): RequestHandler;
-
-/**
- * Middleware to require any of the specified roles
- * @param roles - Array of acceptable roles
- * @returns Express middleware
- * 
- * @example
- * app.get('/staff', auth.protect, requireAnyRole(['admin', 'moderator']), (req, res) => {
- *   res.json({ message: 'Staff access' });
- * });
- */
-export function requireAnyRole(roles: string[]): RequestHandler;
-
-/**
- * Hash a password
- * @param password - Plain text password
- * @returns Hashed password
- */
-export function hashPassword(password: string): Promise<string>;
-
-/**
- * Verify password against hash
- * @param password - Plain text password
- * @param hash - Password hash
- * @returns True if password matches
- */
-export function verifyPassword(password: string, hash: string): Promise<boolean>;
-
-/**
- * Default lifecycle hooks
- */
-export const defaultHooks: HooksConfig;
-
-/**
- * Connect to MongoDB
- * @param connectionString - MongoDB connection string
- * @returns Mongoose connection
- */
-export function connectMongo(connectionString: string): Promise<any>;
-
-/**
- * Connect to Redis
- * @param config - Redis configuration
- * @returns Redis client
- */
-export function connectRedis(config: RedisConfig): Promise<any>;
-
-// ==================== Singleton API (Alternative Usage) ====================
-
-/**
- * Initialize auth instance globally (call once in main server file)
- * @param config - Authentication configuration
- * @returns Auth instance
- * 
- * @example
- * // server.js
- * import { initializeAuth } from 'simple-authx';
- * await initializeAuth({
- *   storage: 'postgres',
- *   postgres: { connectionString: process.env.DATABASE_URL }
- * });
- * 
- * // routes/api.js
- * import { getAuth, protect } from 'simple-authx';
- * const auth = getAuth();
- * app.get('/profile', protect, (req, res) => res.json({ user: req.user }));
- */
-export function initializeAuth(config?: AuthConfig): Promise<AuthInstance>;
-
-/**
- * Get the initialized auth instance
- * @returns Auth instance
- * @throws Error if not initialized
- */
-export function getAuth(): AuthInstance;
-
-/**
- * Protection middleware (requires initializeAuth to be called first)
- */
-export const protect: RequestHandler;
-
-/**
- * Check if auth is initialized
- * @returns True if initialized
- */
-export function isAuthInitialized(): boolean;
-
-/**
- * Reset auth instance (useful for testing)
- */
-export function resetAuth(): void;
-
-// ==================== Express Request Extension ====================
-
-declare global {
-  namespace Express {
-    interface Request {
-      /**
-       * Decoded user from JWT token (available after auth.protect middleware)
-       */
-      user?: DecodedToken & {
-        userId: string;
-        username?: string;
-        email?: string;
-        phoneNumber?: string;
-        role?: string;
-        [key: string]: any;
-      };
-    }
-  }
-}
-
-// ==================== Legacy API (Deprecated) ====================
-
-/**
- * @deprecated Use createAuth() instead. This legacy API will be removed in v3.0.0
- * 
- * Legacy authentication setup (backwards compatibility)
- * 
- * @example
- * // Old way (deprecated)
- * import AuthX from 'simple-authx';
- * const authx = AuthX({ secret: 'my_secret' });
- * 
- * // New way (recommended)
- * import { createAuth } from 'simple-authx';
- * const auth = await createAuth({ secret: 'my_secret' });
- */
-export default function AuthX(config?: LegacyAuthConfig): LegacyAuthInstance;
-
-export interface LegacyAuthConfig {
-  secret?: string;
-  refreshSecret?: string;
-  accessExpiresIn?: string;
-  refreshExpiresIn?: string;
-  saltRounds?: number;
-  cookieName?: string;
-  userStore?: {
-    get(username: string): Promise<any>;
-    set(username: string, user: any): Promise<any>;
-  };
-  tokenStore?: {
-    get(username: string): Promise<any>;
-    set(username: string, token: any): Promise<any>;
-    delete(username: string): Promise<any>;
-  };
-}
-
-export interface LegacyAuthInstance {
-  hashPassword: (password: string) => Promise<string>;
-  verifyPassword: (password: string, hash: string) => Promise<boolean>;
-  signAccess: (payload: any) => string;
-  signRefresh: (payload: any) => string;
-  verifyAccess: (token: string) => any;
-  verifyRefresh: (token: string) => any;
-  protect: RequestHandler;
-  registerHandler: (saveUserFn?: Function) => RequestHandler;
-  loginHandler: (getUserFn?: Function) => RequestHandler;
-  refreshHandler: RequestHandler;
-  logoutHandler: RequestHandler;
-  middleware: any[];
-  router: Router;
-  routes: Router;
-}
-
-// ==================== Type Guards ====================
-
-/**
- * Check if value is a valid User object
- */
-export function isUser(value: any): value is User;
-
-/**
- * Check if value is a valid TokenPair
- */
-export function isTokenPair(value: any): value is TokenPair;
-
-/**
- * Check if value is a valid AuthInstance
- */
-export function isAuthInstance(value: any): value is AuthInstance;
-
-// ==================== Error Types ====================
-
-export class AuthenticationError extends Error {
-  constructor(message: string);
-  statusCode: number;
-  code: string;
-}
-
-export class ValidationError extends Error {
-  constructor(message: string, field?: string);
-  statusCode: number;
-  code: string;
-  field?: string;
-}
-
-export class RateLimitError extends Error {
-  constructor(message: string, retryAfter?: number);
-  statusCode: number;
-  code: string;
-  retryAfter?: number;
-}
-
-// ==================== Enums ====================
-
-export enum StorageType {
-  Memory = 'memory',
-  File = 'file',
-  Postgres = 'postgres',
-  MongoDB = 'mongodb',
-  Redis = 'redis'
-}
-
-export enum HashAlgorithm {
-  Bcrypt = 'bcrypt',
-  Argon2 = 'argon2'
-}
-
-export enum OAuthProvider {
-  Google = 'google',
-  GitHub = 'github',
-  Facebook = 'facebook',
-  Twitter = 'twitter'
-}
-
-// ==================== Advanced Types ====================
-
-/**
- * Extract user fields based on configuration
- */
-export type UserFields<T extends UserFieldsConfig> = 
-  T['identifiers'] extends Array<infer U> ? U : never;
-
-/**
- * Type-safe user data based on configuration
- */
-export type TypedUser<T extends UserFieldsConfig = UserFieldsConfig> = User & {
-  [K in NonNullable<T['identifiers']>[number]]?: string;
-} & {
-  [K in keyof T['custom']]: T['custom'][K]['type'] extends 'string' ? string :
-                            T['custom'][K]['type'] extends 'number' ? number :
-                            T['custom'][K]['type'] extends 'boolean' ? boolean :
-                            T['custom'][K]['type'] extends 'date' ? Date :
-                            T['custom'][K]['type'] extends 'array' ? any[] :
-                            T['custom'][K]['type'] extends 'object' ? object :
-                            any;
-};
-
-/**
- * Type-safe registration data based on configuration
- */
-export type TypedRegistrationData<T extends UserFieldsConfig = UserFieldsConfig> = {
-  password: string;
-} & {
-  [K in NonNullable<T['required']>[number]]: string;
-} & {
-  [K in Exclude<NonNullable<T['identifiers']>[number], NonNullable<T['required']>[number]>]?: string;
-} & {
-  [K in keyof T['custom']]?: T['custom'][K]['type'] extends 'string' ? string :
-                              T['custom'][K]['type'] extends 'number' ? number :
-                              T['custom'][K]['type'] extends 'boolean' ? boolean :
-                              T['custom'][K]['type'] extends 'date' ? Date :
-                              T['custom'][K]['type'] extends 'array' ? any[] :
-                              T['custom'][K]['type'] extends 'object' ? object :
-                              any;
-};
-
-// ==================== Module Augmentation ====================
-
-declare module 'express-serve-static-core' {
-  interface Request {
-    user?: DecodedToken;
-  }
+  logEvent(event: string, userId?: string, metadata?: any): Promise<void>;
 }
 
 // ==================== Exports Summary ====================
