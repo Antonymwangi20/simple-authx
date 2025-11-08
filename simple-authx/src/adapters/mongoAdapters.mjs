@@ -149,36 +149,56 @@ export class MongoAdapter {
     }
   }
 
-  async verifyUser(username, password) {
-    try {
-      // Find user with timeout
-      const user = await UserModel.findOne({ username }).maxTimeMS(5000);
-      
-      if (!user) {
-        console.log('[MongoAdapter] User not found:', username);
-        return null;
-      }
-      
-      // Verify password
-      const isValid = await verifyPassword(password, user.password);
-      
-      if (!isValid) {
-        console.log('[MongoAdapter] Invalid password for:', username);
-        return null;
-      }
-      
-      console.log('[MongoAdapter] User verified:', username);
-      
-      return { 
-        id: user._id.toString(), 
-        username: user.username, 
-        password_hash: user.password 
-      };
-    } catch (err) {
-      console.error('[MongoAdapter] verifyUser error:', err.message);
-      throw new Error(`Verification failed: ${err.message}`);
+  // src/adapters/mongoAdapters.mjs - Fixed verifyUser method
+// Replace the verifyUser method (around line 105) with this:
+
+async verifyUser(identifier, password) {
+  try {
+    console.log('[MongoAdapter] Verifying user:', identifier);
+    
+    // Find user with timeout - support all identifiers
+    const user = await UserModel.findOne({
+      $or: [
+        { username: identifier },
+        { email: identifier },
+        { phoneNumber: identifier }
+      ]
+    }).maxTimeMS(5000);
+    
+    if (!user) {
+      console.log('[MongoAdapter] User not found:', identifier);
+      return null;
     }
+    
+    console.log('[MongoAdapter] User found:', {
+      id: user._id.toString(),
+      username: user.username,
+      email: user.email,
+      hasPassword: !!user.password
+    });
+    
+    // Verify password
+    const isValid = await verifyPassword(password, user.password);
+    
+    if (!isValid) {
+      console.log('[MongoAdapter] Invalid password for:', identifier);
+      return null;
+    }
+    
+    console.log('[MongoAdapter] User verified successfully');
+    
+    return { 
+      id: user._id.toString(), 
+      username: user.username,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+      password_hash: user.password 
+    };
+  } catch (err) {
+    console.error('[MongoAdapter] verifyUser error:', err.message);
+    throw new Error(`Verification failed: ${err.message}`);
   }
+}
 
   async storeRefreshToken(userId, token, expiry) {
     try {

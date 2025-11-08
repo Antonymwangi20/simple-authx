@@ -101,12 +101,17 @@ async function runDiagnostics() {
     console.log('\n5️⃣ Testing Registration...\n');
     
     try {
-      const registerResult = await auth.auth.register(testUser.username, testUser.password);
+      // Use the new userData object format
+      const registerResult = await auth.auth.register({
+        username: testUser.username,
+        password: testUser.password
+      });
       console.log('✅ Registration successful');
       console.log('   User ID:', registerResult.user.id);
       console.log('   Username:', registerResult.user.username);
     } catch (err) {
       console.error('❌ Registration failed:', err.message);
+      console.error('   Expected format: { username, password }');
       throw err;
     }
     

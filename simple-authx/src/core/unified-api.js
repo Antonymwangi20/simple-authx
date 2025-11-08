@@ -380,37 +380,176 @@ function createRouter(authManager, plugins, config) {
   });
 
   // Update login route to support any identifier
-  router.post('/login', async (req, res) => {
+  // Fixed login route for unified-api.js
+// Replace the existing login route with this implementation
+
+router.post('/login', async (req, res) => {
+  console.log('[LOGIN] Request received');
+  console.log('[LOGIN] Body:', JSON.stringify(req.body, null, 2));
+  
+  try {
+    const { identifier, username, email, phoneNumber, password } = req.body || {};
+    
+    // Support both old format (username/email/phoneNumber) and new format (identifier)
+    const loginIdentifier = identifier || username || email || phoneNumber;
+    
+    console.log('[LOGIN] Login identifier:', loginIdentifier);
+    console.log('[LOGIN] Password provided:', !!password);
+    
+    if (!loginIdentifier || !password) {
+      console.log('[LOGIN] Missing credentials');
+      return res.status(400).json({ 
+        error: 'identifier (or username/email/phoneNumber) and password required',
+        received: {
+          identifier: !!loginIdentifier,
+          password: !!password
+        }
+      });
+    }
+    
+    // Optional: Check if blocked
+    if (plugins.security) {
+      console.log('[LOGIN] Checking security blocks...');
+      const blocked = await plugins.security.isBlocked(loginIdentifier, req.ip);
+      if (blocked.userBlocked || blocked.ipBlocked) {
+        console.log('[LOGIN] User/IP blocked');
+        return res.status(429).json({
+          error: 'Too many failed attempts. Please try again later.',
+          remainingAttempts: blocked.remainingAttempts
+        });
+      }
+    }
+    
+    console.log('[LOGIN] Attempting login via AuthManager...');
+    
+    // Try loginWithIdentifier first (supports email/username/phone)
+    let result;
     try {
-      const { identifier, username, email, phoneNumber, password } = req.body || {};
+      if (authManager.loginWithIdentifier) {
+        console.log('[LOGIN] Using loginWithIdentifier method');
+        result = await authManager.loginWithIdentifier(loginIdentifier, password);
+      } else {
+        console.log('[LOGIN] Falling back to login method');
+        result = await authManager.login(loginIdentifier, password);
+      }
+    } catch (loginError) {
+      console.error('[LOGIN] Login failed:', loginError.message);
+      console.error('[LOGIN] Stack:', loginError.stack);
       
-      // Support both old format (username/email/phoneNumber) and new format (identifier)
-      const loginIdentifier = identifier || username || email || phoneNumber;
+      // Track failure
+      if (plugins.security) {
+        await plugins.security.trackLoginAttempt(loginIdentifier, req.ip, false);
+      }
       
-      if (!loginIdentifier || !password) {
-        return res.status(400).json({ 
-          error: 'identifier (or username/email/phoneNumber) and password required' 
+      if (plugins.audit) {
+        await plugins.audit.log({
+          type: 'login',
+          username: loginIdentifier,
+          success: false,
+          ip: req.ip,
+          details: loginError.message
         });
       }
       
-      // Optional: Check if blocked
-      if (plugins.security) {
-        const blocked = await plugins.security.isBlocked(loginIdentifier, req.ip);
-        if (blocked.userBlocked || blocked.ipBlocked) {
-          return res.status(429).json({
-            error: 'Too many failed attempts. Please try again later.',
-            remainingAttempts: blocked.remainingAttempts
-          });
-        }
-      }
-      
-      const result = await authManager.loginWithIdentifier(loginIdentifier, password);
-      
-      // ... rest of login logic
-    } catch (err) {
-      // ... error handling
+      return res.status(401).json({ 
+        error: 'Invalid credentials',
+        debug: process.env.NODE_ENV === 'development' ? {
+          message: loginError.message,
+          identifier: loginIdentifier
+        } : undefined
+      });
     }
-  });
+    
+    console.log('[LOGIN] Login successful');
+    console.log('[LOGIN] User ID:', result.user.id);
+    
+    // Track success
+    if (plugins.security) {
+      await plugins.security.trackLoginAttempt(loginIdentifier, req.ip, true);
+    }
+    
+    // Create session
+    if (plugins.sessions) {
+      try {
+        await plugins.sessions.createSession(result.user.id, req);
+      } catch (sessionError) {
+        console.error('[LOGIN] Session creation failed:', sessionError.message);
+        // Don't fail the login if session creation fails
+      }
+    }
+    
+    // Audit log
+    if (plugins.audit) {
+      await plugins.audit.log({
+        type: 'login',
+        username: loginIdentifier,
+        success: true,
+        ip: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+    }
+    
+    if (useCookies) {
+      console.log('[LOGIN] Setting cookies...');
+      setCookies(res, result.refreshToken);
+      return res.json({
+        user: { 
+          id: result.user.id, 
+          username: result.user.username,
+          email: result.user.email,
+          phoneNumber: result.user.phoneNumber
+        },
+        accessToken: result.accessToken
+      });
+    }
+    
+    console.log('[LOGIN] Sending response...');
+    res.json({
+      user: { 
+        id: result.user.id, 
+        username: result.user.username,
+        email: result.user.email,
+        phoneNumber: result.user.phoneNumber
+      },
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken
+    });
+  } catch (err) {
+    console.error('[LOGIN] Unexpected error:', err.message);
+    console.error('[LOGIN] Stack:', err.stack);
+    
+    // Track failure
+    if (plugins.security) {
+      try {
+        await plugins.security.trackLoginAttempt(req.body?.username || req.body?.identifier, req.ip, false);
+      } catch (secError) {
+        console.error('[LOGIN] Security tracking failed:', secError.message);
+      }
+    }
+    
+    if (plugins.audit) {
+      try {
+        await plugins.audit.log({
+          type: 'login',
+          username: req.body?.username || req.body?.identifier,
+          success: false,
+          ip: req.ip,
+          details: err.message
+        });
+      } catch (auditError) {
+        console.error('[LOGIN] Audit logging failed:', auditError.message);
+      }
+    }
+    
+    res.status(500).json({ 
+      error: 'Login failed',
+      debug: process.env.NODE_ENV === 'development' ? {
+        message: err.message,
+        stack: err.stack
+      } : undefined
+    });
+  }
+});
   
   router.post('/refresh', async (req, res) => {
     try {
