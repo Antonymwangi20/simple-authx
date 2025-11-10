@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "target": "ES2020",
+    "checkJs": true,
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": ".",
+    "paths": {
+      "simple-authx": ["./index.mjs"],
+      "simple-authx/*": ["./*"]
+    },
+    "lib": ["ES2020"]
+  },
+  "include": ["src/**/*", "index.mjs", "index.d.ts", "examples/**/*"],
+  "exclude": ["node_modules", "tests", "dist", "coverage", "docs"]
+}

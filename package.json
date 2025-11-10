@@ -1,0 +1,131 @@
+{
+  "name": "simple-authx",
+  "version": "2.0.6",
+  "description": "A minimal Express authentication helper using JWT with multiple adapters, MFA, social auth, and security features.",
+  "type": "module",
+  "main": "index.mjs",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./index.mjs",
+      "types": "./index.d.ts"
+    }
+  },
+  "keywords": [
+    "express",
+    "authentication",
+    "jwt",
+    "auth",
+    "bcrypt",
+    "argon2",
+    "middleware",
+    "mfa",
+    "2fa",
+    "oauth",
+    "sessions",
+    "redis",
+    "postgres",
+    "mongodb",
+    "security",
+    "passport",
+    "token",
+    "refresh-token",
+    "csrf",
+    "rate-limiting"
+  ],
+  "author": {
+    "name": "Antony Mwangi",
+    "email": "antony254mm@gmail.com",
+    "url": "https://github.com/Antonymwangi20"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Antonymwangi20/simple-authx.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Antonymwangi20/simple-authx/issues",
+    "email": "antony254mm@gmail.com"
+  },
+  "homepage": "https://simple-authx-lp.vercel.app",
+  "files": [
+    "index.mjs",
+    "index.d.ts",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "scripts": {
+    "test": "NODE_ENV=test mocha tests/**/*.test.js",
+    "test:coverage": "c8 --reporter=lcov --reporter=text npm test",
+    "test:watch": "mocha tests/**/*.test.js --watch",
+    "test:integration": "NODE_ENV=test mocha tests/integration/**/*.test.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"**/*.{js,mjs,json,md}\"",
+    "format:check": "prettier --check \"**/*.{js,mjs,json,md}\"",
+    "audit": "npm audit --audit-level=moderate",
+    "audit:fix": "npm audit fix",
+    "security:check": "npm audit && npm outdated",
+    "docs": "jsdoc -c jsdoc.json",
+    "docs:serve": "npx http-server ./docs",
+    "analyze": "npm pack --dry-run",
+    "size": "npx size-limit",
+    "benchmark": "node tests/benchmarks/auth-performance.js",
+    "prepublishOnly": "npm run lint && npm test"
+  },
+  "dependencies": {
+    "argon2": "^0.44.0",
+    "bcryptjs": "^3.0.3",
+    "cookie": "^1.0.2",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.2.1",
+    "geoip-lite": "^1.4.10",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.19.3",
+    "ms": "^2.1.3",
+    "otplib": "^12.0.1",
+    "passport-oauth2": "^1.8.0",
+    "pg": "^8.16.3",
+    "pino": "^10.1.0",
+    "qrcode": "^1.5.4",
+    "rate-limit-redis": "^4.2.3",
+    "redis": "^5.9.0",
+    "ua-parser-js": "^2.0.6",
+    "zxcvbn": "^4.4.2"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^20.1.0",
+    "@commitlint/config-conventional": "^20.0.0",
+    "@types/node": "24.10.0",
+    "c8": "^10.1.3",
+    "chai": "^6.2.0",
+    "docdash": "^2.0.2",
+    "eslint": "^8.55.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
+    "husky": "^9.1.7",
+    "jsdoc": "^4.0.5",
+    "lint-staged": "^16.2.6",
+    "mocha": "^11.7.5",
+    "prettier": "^3.6.2",
+    "size-limit": "^11.2.0",
+    "supertest": "^7.1.4"
+  },
+  "lint-staged": {
+    "*.{js,mjs}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "source": {
+    "include": ["./index.mjs", "./src"],
+    "includePattern": "\\.(mjs|js)$",
+    "exclude": ["node_modules", "tests", "examples", "coverage", "docs"]
+  },
+  "opts": {
+    "destination": "./docs/",
+    "recurse": true,
+    "template": "node_modules/docdash"
+  },
+  "tags": {
+    "allowUnknownTags": true,
+    "dictionaries": ["jsdoc", "closure"]
+  },
+  "templates": {
+    "docdash": {
+      "static": true,
+      "sort": true,
+      "sectionOrder": [
+        "Classes",
+        "Modules",
+        "Externals",
+        "Events",
+        "Namespaces",
+        "Mixins",
+        "Tutorials",
+        "Interfaces"
+      ]
+    }
+  }
+}

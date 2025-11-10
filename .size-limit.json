@@ -1,0 +1,14 @@
+[
+  {
+    "name": "Core Package",
+    "path": "index.mjs",
+    "limit": "50 KB",
+    "gzip": true
+  },
+  {
+    "name": "With PostgreSQL",
+    "path": "index.mjs",
+    "import": "{ createAuth, PostgresAdapter }",
+    "limit": "60 KB"
+  }
+]

@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>index.mjs - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="module-core_auth.AuthManager.html">AuthManager</a><ul class='methods'><li data-type='method'><a href="module-core_auth.AuthManager.html#generateTokens">generateTokens</a></li><li data-type='method'><a href="module-core_auth.AuthManager.html#login">login</a></li><li data-type='method'><a href="module-core_auth.AuthManager.html#loginWithIdentifier">loginWithIdentifier</a></li><li data-type='method'><a href="module-core_auth.AuthManager.html#refresh">refresh</a></li><li data-type='method'><a href="module-core_auth.AuthManager.html#register">register</a></li></ul></li><li><a href="module-core_auth-AuthManager.html">AuthManager</a></li><li><a href="module-security_audit.AuditLogger.html">AuditLogger</a></li><li><a href="module-security_audit-AuditLogger.html">AuditLogger</a></li><li><a href="module-security_security.SecurityManager.html">SecurityManager</a></li><li><a href="module-security_security-SecurityManager.html">SecurityManager</a></li></ul><h3>Modules</h3><ul><li><a href="module-core_auth.html">core/auth</a></li><li><a href="module-core_unified-api.html">core/unified-api</a><ul class='methods'><li data-type='method'><a href="module-core_unified-api.html#.createAuth">createAuth</a></li><li data-type='method'><a href="module-core_unified-api.html#~addMFARoutes">addMFARoutes</a></li><li data-type='method'><a href="module-core_unified-api.html#~addSessionRoutes">addSessionRoutes</a></li><li data-type='method'><a href="module-core_unified-api.html#~addSocialRoutes">addSocialRoutes</a></li><li data-type='method'><a href="module-core_unified-api.html#~createMemoryAdapter">createMemoryAdapter</a></li><li data-type='method'><a href="module-core_unified-api.html#~createProtectMiddleware">createProtectMiddleware</a></li><li data-type='method'><a href="module-core_unified-api.html#~createRouter">createRouter</a></li><li data-type='method'><a href="module-core_unified-api.html#~normalizeConfig">normalizeConfig</a></li><li data-type='method'><a href="module-core_unified-api.html#~setupAdapter">setupAdapter</a></li><li data-type='method'><a href="module-core_unified-api.html#~setupPlugins">setupPlugins</a></li></ul></li><li><a href="module-security_audit.html">security/audit</a></li><li><a href="module-security_security.html">security/security</a></li><li><a href="module-simple-authx.html">simple-authx</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getAuth">getAuth</a></li><li><a href="global.html#getDefaultConfig">getDefaultConfig</a></li><li><a href="global.html#hasherName">hasherName</a></li><li><a href="global.html#initializeAuth">initializeAuth</a></li><li><a href="global.html#isAuthInitialized">isAuthInitialized</a></li><li><a href="global.html#protect">protect</a></li><li><a href="global.html#resetAuth">resetAuth</a></li><li><a href="global.html#verifyPassword">verifyPassword</a></li></ul>
+    
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">index.mjs</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @fileoverview Simple-AuthX - Minimal Express authentication helper using JWT
+ * @module simple-authx
+ * @version 2.0.6
+ * @author Antony Mwangi
+ */
+
+// 🎯 PRIMARY API (Recommended)
+// ⚠️ LEGACY API (Backwards Compatibility)
+// This is the old in-memory implementation
+// Still exported for existing users, but createAuth() is recommended
+import express from 'express';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import cookie from 'cookie';
+import cookieParser from 'cookie-parser';
+
+/**
+ * Creates a new authentication instance with unified API
+ * @see ./src/core/unified-api.js for full documentation
+ */
+export { createAuth } from './src/core/unified-api.js';
+
+// 🔧 Core Components (for advanced usage)
+export { AuthManager } from './src/core/auth.js';
+export { defaultHooks } from './src/core/hooks.js';
+export {
+  initializeAuth,
+  getAuth,
+  protect,
+  isAuthInitialized,
+  resetAuth,
+} from './src/core/singleton.js';
+
+// 📦 Adapters
+export { PostgresAdapter } from './src/adapters/postgresAdapter.mjs';
+export { FileAdapter } from './src/adapters/file-adapter.js';
+export { connectMongo, MongoAdapter } from './src/adapters/mongoAdapters.mjs';
+export { connectRedis, RedisAdapter } from './src/adapters/redisAdapter.mjs';
+
+// 🔐 Security Modules
+export { MFAProvider } from './src/security/mfa.js';
+export { SocialAuthProvider } from './src/security/social.js';
+export { SessionManager } from './src/security/sessions.js';
+export { SecurityManager } from './src/security/security.js';
+export { PasswordManager } from './src/security/password.js';
+export { AuditLogger } from './src/security/audit.js';
+
+// 🛡️ Utilities
+export { requireRole, requireAnyRole } from './src/core/rbac.js';
+export { hashPassword, verifyPassword } from './src/utils/hash.js';
+
+/**
+ * Legacy AuthX function for backwards compatibility
+ * @deprecated Use createAuth() instead for better features and multiple storage adapters
+ * @param {Object} config - Configuration options
+ * @param {string} [config.secret] - JWT access token secret
+ * @param {string} [config.refreshSecret] - JWT refresh token secret
+ * @param {string} [config.accessExpiresIn='1h'] - Access token expiration time
+ * @param {string} [config.refreshExpiresIn='7d'] - Refresh token expiration time
+ * @param {number} [config.saltRounds=10] - Bcrypt salt rounds
+ * @param {string} [config.cookieName='refreshToken'] - Name of the refresh token cookie
+ * @returns {Object} Authentication middleware and handlers
+ * @example
+ * const auth = AuthX({ secret: 'my-secret', refreshSecret: 'my-refresh-secret' });
+ * app.use('/auth', auth.routes);
+ */
+export default function AuthX(config = {}) {
+  console.warn(
+    '[AuthX] You are using the legacy API. Consider migrating to createAuth() for better features.\n' +
+      'See: https://github.com/Antonymwangi20/simple-authx#migration-guide'
+  );
+
+  const {
+    secret = process.env.JWT_SECRET || 'default_access_secret',
+    refreshSecret = process.env.REFRESH_SECRET || 'default_refresh_secret',
+    accessExpiresIn = config.accessExpiresIn || '1h',
+    refreshExpiresIn = config.refreshExpiresIn || '7d',
+    saltRounds = config.saltRounds || 10,
+    cookieName = config.cookieName || 'refreshToken',
+  } = config;
+
+  // Default in-memory user store
+  const userStore = config.userStore || {
+    _map: new Map(),
+    async get(username) {
+      return this._map.get(username) || null;
+    },
+    async set(username, user) {
+      this._map.set(username, user);
+      return user;
+    },
+  };
+
+  // Default in-memory token store
+  const tokenStore = config.tokenStore || {
+    _map: new Map(),
+    async get(username) {
+      return this._map.get(username) || null;
+    },
+    async set(username, token) {
+      this._map.set(username, token);
+      return token;
+    },
+    async delete(username) {
+      return this._map.delete(username);
+    },
+  };
+
+  /**
+   * Hashes a password using bcrypt
+   * @private
+   * @param {string} password - Password to hash
+   * @returns {string} Hashed password
+   */
+  async function hashPassword(password) {
+    const salt = await bcrypt.genSalt(saltRounds);
+    return bcrypt.hash(password, salt);
+  }
+
+  /**
+   * Verifies a password against a hash
+   * @private
+   * @param {string} password - Password to verify
+   * @param {string} hash - Hash to verify against
+   * @returns {boolean} Whether the password matches the hash
+   */
+  async function verifyPassword(password, hash) {
+    return bcrypt.compare(password, hash);
+  }
+
+  /**
+   * Signs an access token
+   * @private
+   * @param {Object} payload - Token payload
+   * @returns {string} Signed JWT access token
+   */
+  function signAccess(payload) {
+    return jwt.sign(payload, secret, { expiresIn: accessExpiresIn });
+  }
+
+  /**
+   * Signs a refresh token
+   * @private
+   * @param {Object} payload - Token payload
+   * @returns {string} Signed JWT refresh token
+   */
+  function signRefresh(payload) {
+    return jwt.sign(payload, refreshSecret, { expiresIn: refreshExpiresIn });
+  }
+
+  /**
+   * Verifies an access token
+   * @private
+   * @param {string} token - JWT access token
+   * @returns {Object|null} Decoded payload or null if invalid
+   */
+  function verifyAccess(token) {
+    try {
+      return jwt.verify(token, secret);
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Verifies a refresh token
+   * @private
+   * @param {string} token - JWT refresh token
+   * @returns {Object|null} Decoded payload or null if invalid
+   */
+  function verifyRefresh(token) {
+    try {
+      return jwt.verify(token, refreshSecret);
+    } catch {
+      return null;
+    }
+  }
+
+  async function issueTokens(res, username, cookieOptions = {}) {
+    const accessToken = signAccess({ username });
+    const refreshToken = signRefresh({ username });
+    await tokenStore.set(username, refreshToken);
+
+    const cookieStr = cookie.serialize(cookieName, refreshToken, {
+      httpOnly: true,
+      secure: cookieOptions.secure || false,
+      sameSite: cookieOptions.sameSite || 'strict',
+      path: '/',
+      maxAge: cookieOptions.maxAge || 7 * 24 * 60 * 60,
+    });
+    res.setHeader('Set-Cookie', cookieStr);
+    return { accessToken, refreshToken };
+  }
+
+  function protect(req, res, next) {
+    const token =
+      (req.headers.authorization &amp;&amp; req.headers.authorization.split(' ')[1]) ||
+      (req.cookies &amp;&amp; req.cookies[cookieName]) ||
+      (req.cookies &amp;&amp; req.cookies.token);
+    if (!token) return res.status(401).json({ error: 'Missing access token' });
+
+    const decoded = verifyAccess(token);
+    if (!decoded) return res.status(403).json({ error: 'Invalid or expired access token' });
+
+    req.user = decoded;
+    return next();
+  }
+
+  function registerHandler(saveUserFn) {
+    const saver = saveUserFn || (async (u, h) => userStore.set(u, { username: u, password: h }));
+    return async (req, res) => {
+      const { username, password } = req.body || {};
+      if (!username || !password)
+        return res.status(400).json({ error: 'username and password required' });
+      const existing = await userStore.get(username);
+      if (existing) return res.status(400).json({ error: 'User already exists' });
+
+      const hashed = await hashPassword(password);
+      const user = await saver(username, hashed);
+      const tokens = await issueTokens(res, username);
+      return res.json({
+        message: 'User registered',
+        user,
+        tokens: { accessToken: tokens.accessToken },
+      });
+    };
+  }
+
+  function loginHandler(getUserFn) {
+    const getter = getUserFn || (async (u) => userStore.get(u));
+    return async (req, res) => {
+      const { username, password } = req.body || {};
+      if (!username || !password)
+        return res.status(400).json({ error: 'username and password required' });
+      const user = await getter(username);
+      if (!user) return res.status(404).json({ error: 'User not found' });
+
+      const ok = await verifyPassword(password, user.password);
+      if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
+
+      const tokens = await issueTokens(res, username);
+      return res.json({ message: 'Login successful', accessToken: tokens.accessToken });
+    };
+  }
+
+  async function refreshHandler(req, res) {
+    const cookies = req.headers.cookie ? cookie.parse(req.headers.cookie) : req.cookies || {};
+    const oldRefresh = req.body?.refreshToken || cookies[cookieName];
+    if (!oldRefresh) return res.status(400).json({ error: 'Refresh token required' });
+
+    const decoded = verifyRefresh(oldRefresh);
+    if (!decoded || typeof decoded === 'string')
+      return res.status(403).json({ error: 'Invalid refresh token' });
+
+    const { username } = decoded;
+    const stored = await tokenStore.get(username);
+    if (stored !== oldRefresh)
+      return res.status(403).json({ error: 'Refresh token not recognized' });
+
+    const newAccess = signAccess({ username });
+    const newRefresh = signRefresh({ username });
+
+    const rotated = tokenStore.rotate
+      ? await tokenStore.rotate(username, oldRefresh, newRefresh)
+      : (await tokenStore.set(username, newRefresh), true);
+
+    if (!rotated)
+      return res.status(403).json({ error: 'Token reuse detected. Re-login required.' });
+
+    const cookieStr = cookie.serialize(cookieName, newRefresh, {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60,
+    });
+    res.setHeader('Set-Cookie', cookieStr);
+    return res.json({ accessToken: newAccess });
+  }
+
+  async function logoutHandler(req, res) {
+    const cookies = req.headers.cookie ? cookie.parse(req.headers.cookie) : req.cookies || {};
+    const refreshToken = req.body?.refreshToken || cookies[cookieName];
+    if (!refreshToken) return res.status(400).json({ error: 'Refresh token required' });
+
+    const decoded = verifyRefresh(refreshToken);
+    if (!decoded || typeof decoded === 'string')
+      return res.status(400).json({ error: 'Invalid refresh token' });
+
+    await tokenStore.delete(decoded.username);
+    const clear = cookie.serialize(cookieName, '', {
+      httpOnly: true,
+      path: '/',
+      expires: new Date(0),
+    });
+    res.setHeader('Set-Cookie', clear);
+    return res.json({ message: 'Logged out' });
+  }
+
+  const router = express.Router();
+
+  router.post('/register', registerHandler());
+  router.post('/login', loginHandler());
+  router.post('/refresh', refreshHandler);
+  router.post('/logout', logoutHandler);
+  router.get('/me', protect, (req, res) => {
+    res.json({ user: req.user });
+  });
+
+  return {
+    hashPassword,
+    verifyPassword,
+    signAccess,
+    signRefresh,
+    verifyAccess,
+    verifyRefresh,
+    protect,
+    registerHandler,
+    loginHandler,
+    refreshHandler,
+    logoutHandler,
+    middleware: [cookieParser()],
+    router,
+    routes: router, // Alias for consistency
+  };
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Mon Nov 10 2025 22:31:27 GMT+0300 (East Africa Time) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+
+
+</body>
+</html>
