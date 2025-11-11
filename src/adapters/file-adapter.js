@@ -1,4 +1,5 @@
 import fs from 'fs/promises';
+import path from 'path';
 import crypto from 'crypto';
 import { hashPassword, verifyPassword } from '../utils/hash.js';
 
@@ -18,6 +19,9 @@ export class FileAdapter {
   }
 
   async save() {
+    // Ensure directory exists before writing file
+    const dir = path.dirname(this.filename);
+    await fs.mkdir(dir, { recursive: true });
     await fs.writeFile(this.filename, JSON.stringify(this.data, null, 2));
   }
 
