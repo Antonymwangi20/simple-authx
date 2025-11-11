@@ -42,7 +42,7 @@ async function testZeroConfig() {
   let threwError = false;
   try {
     await auth.auth.refresh(user1.refreshToken); // Old token
-  } catch (err) {
+  } catch {
     threwError = true;
   }
   assert(threwError, 'old refresh token should be rejected');
@@ -59,7 +59,7 @@ async function testFileStorage() {
     const fs = await import('fs/promises');
     await fs.mkdir('./data', { recursive: true });
     await fs.unlink('./data/test-auth.json').catch(() => {});
-  } catch (cleanupError) {
+  } catch {
     // Ignore cleanup errors
   }
 
@@ -350,7 +350,7 @@ async function runAllTests() {
 try {
   await import('supertest');
   runAllTests();
-} catch (err) {
+} catch {
   console.log('⚠️  supertest not found. Installing for tests...');
   console.log('Run: npm install --save-dev supertest');
   console.log('\nOr skip Express integration tests and run other tests:');

@@ -4,9 +4,7 @@ import { initializeAuth, getAuth, resetAuth } from '../../index.mjs';
 async function benchmark(name, fn, iterations = 1000) {
   const start = performance.now();
 
-  // eslint-disable-next-line no-restricted-syntax
   for (let i = 0; i < iterations; i += 1) {
-    // eslint-disable-next-line no-await-in-loop
     await fn();
   }
 

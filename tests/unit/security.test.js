@@ -29,7 +29,7 @@ describe('Security Manager', () => {
   describe('trackLoginAttempt', () => {
     it('should return undefined when redis is not available', async () => {
       const result = await securityManager.trackLoginAttempt('testuser', '127.0.0.1', true);
-      expect(result).to.be.undefined; // eslint-disable-line no-unused-expressions
+      expect(result).to.be.undefined;
     });
 
     it('should track successful login attempt with redis', async () => {
@@ -47,9 +47,15 @@ describe('Security Manager', () => {
     it('should track failed login attempt with redis', async () => {
       // Mock redis client with proper chaining
       const mockMulti = {
-        zadd() { return this; },
-        zremrangebyscore() { return this; },
-        expire() { return this; },
+        zadd() {
+          return this;
+        },
+        zremrangebyscore() {
+          return this;
+        },
+        expire() {
+          return this;
+        },
         exec: async () => [0, 0],
       };
       const mockRedis = {
@@ -66,7 +72,7 @@ describe('Security Manager', () => {
   describe('isBlocked', () => {
     it('should return false when redis is not available', async () => {
       const result = await securityManager.isBlocked('testuser', '127.0.0.1');
-      expect(result).to.be.false; // eslint-disable-line no-unused-expressions
+      expect(result).to.be.false;
     });
 
     it('should return object with blocking info when redis is available', async () => {
@@ -95,10 +101,12 @@ describe('Security Manager', () => {
 
     it('should handle different IP addresses', async () => {
       const ips = ['127.0.0.1', '192.168.1.1', '10.0.0.1'];
-      await Promise.all(ips.map(async (ip) => {
-        const reputation = await securityManager.getIPReputation(ip);
-        expect(reputation).to.be.a('string');
-      }));
+      await Promise.all(
+        ips.map(async (ip) => {
+          const reputation = await securityManager.getIPReputation(ip);
+          expect(reputation).to.be.a('string');
+        })
+      );
     });
   });
 });
@@ -125,7 +133,7 @@ describe('Security Plugin Integration', () => {
 
   it('should have security manager when plugin enabled', () => {
     const auth = getAuth();
-    expect(auth.security).to.not.be.null; // eslint-disable-line no-unused-expressions
+    expect(auth.security).to.not.be.null;
     expect(auth.security).to.be.instanceOf(SecurityManager);
   });
 

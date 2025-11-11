@@ -109,7 +109,7 @@ describe('Password Manager', () => {
       const hash = await passwordManager.hashPassword(password);
       const isValid = await passwordManager.verifyPassword(password, hash);
 
-      expect(isValid).to.be.true; // eslint-disable-line no-unused-expressions
+      expect(isValid).to.be.true;
     });
 
     it('should reject incorrect password', async function () {
@@ -118,7 +118,7 @@ describe('Password Manager', () => {
       const hash = await passwordManager.hashPassword(password);
       const isValid = await passwordManager.verifyPassword('WrongPassword', hash);
 
-      expect(isValid).to.be.false; // eslint-disable-line no-unused-expressions
+      expect(isValid).to.be.false;
     });
   });
 
@@ -145,4 +145,3 @@ describe('Password Manager', () => {
     });
   });
 });
-

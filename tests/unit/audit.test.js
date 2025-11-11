@@ -98,4 +98,3 @@ describe('Audit Logger', () => {
     });
   });
 });
-

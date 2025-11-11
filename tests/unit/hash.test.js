@@ -40,7 +40,7 @@ describe('Password Hashing Utilities', () => {
       const hash = await hashPassword(password);
       const isValid = await verifyPassword(password, hash);
 
-      expect(isValid).to.be.true; // eslint-disable-line no-unused-expressions
+      expect(isValid).to.be.true;
     });
 
     it('should reject incorrect password', async () => {
@@ -49,13 +49,13 @@ describe('Password Hashing Utilities', () => {
       const hash = await hashPassword(password);
       const isValid = await verifyPassword(wrongPassword, hash);
 
-      expect(isValid).to.be.false; // eslint-disable-line no-unused-expressions
+      expect(isValid).to.be.false;
     });
 
     it('should handle empty password verification', async () => {
       const hash = await hashPassword('');
       const isValid = await verifyPassword('', hash);
-      expect(isValid).to.be.true; // eslint-disable-line no-unused-expressions
+      expect(isValid).to.be.true;
     });
 
     it('should handle case-sensitive passwords', async () => {
@@ -63,12 +63,12 @@ describe('Password Hashing Utilities', () => {
       const hash = await hashPassword(password);
       const isValid = await verifyPassword('testpassword123', hash);
 
-      expect(isValid).to.be.false; // eslint-disable-line no-unused-expressions
+      expect(isValid).to.be.false;
     });
 
     it('should handle invalid hash format gracefully', async () => {
       const isValid = await verifyPassword('password', 'invalid-hash-format');
-      expect(isValid).to.be.false; // eslint-disable-line no-unused-expressions
+      expect(isValid).to.be.false;
     });
   });
 
@@ -98,7 +98,7 @@ describe('Password Hashing Utilities', () => {
         await promise;
         const hash = await hashPassword(password);
         const isValid = await verifyPassword(password, hash);
-        expect(isValid).to.be.true; // eslint-disable-line no-unused-expressions
+        expect(isValid).to.be.true;
       }, Promise.resolve());
     });
   });

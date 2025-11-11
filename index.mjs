@@ -17,7 +17,7 @@ import cookieParser from 'cookie-parser';
 
 /**
  * Creates a new authentication instance with unified API
- * @see {./src/core/unified-api.js} for full documentation
+ * @see ./src/core/unified-api.js for full documentation
  */
 export { createAuth } from './src/core/unified-api.js';
 

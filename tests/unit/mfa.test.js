@@ -128,4 +128,3 @@ describe('MFA Provider', () => {
     });
   });
 });
-

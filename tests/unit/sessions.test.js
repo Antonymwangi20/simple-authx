@@ -15,7 +15,8 @@ describe('Session Manager', () => {
           sessions.set(session.id, session);
           return session;
         },
-        findByUser: async (userId) => Array.from(sessions.values()).filter((s) => s.userId === userId),
+        findByUser: async (userId) =>
+          Array.from(sessions.values()).filter((s) => s.userId === userId),
         update: async (sessionId, updates) => {
           const session = sessions.get(sessionId);
           if (session) {
@@ -86,8 +87,10 @@ describe('Session Manager', () => {
       const updatedSessions = await sessionManager.getSessions('user123');
       const updatedSession = updatedSessions.find((s) => s.id === session.id);
 
-      expect(updatedSession).to.exist; // eslint-disable-line no-unused-expressions
-      expect(new Date(updatedSession.lastActive).getTime()).to.be.greaterThan(initialTime.getTime());
+      expect(updatedSession).to.exist;
+      expect(new Date(updatedSession.lastActive).getTime()).to.be.greaterThan(
+        initialTime.getTime()
+      );
     });
   });
 
@@ -125,7 +128,7 @@ describe('Session Manager', () => {
 
       const sessions = await sessionManager.getSessions('user123');
       const found = sessions.find((s) => s.id === session.id);
-      expect(found).to.be.undefined; // eslint-disable-line no-unused-expressions
+      expect(found).to.be.undefined;
     });
   });
 
@@ -175,4 +178,3 @@ describe('Session Manager', () => {
     });
   });
 });
-

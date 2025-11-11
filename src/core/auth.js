@@ -156,7 +156,9 @@ export class AuthManager {
     console.log('[AuthManager] User created:', user.id);
 
     const tokens = this.generateTokens({ userId: user.id });
-    const decoded = /** @type {import('jsonwebtoken').JwtPayload} */ (jwt.decode(tokens.refreshToken));
+    const decoded = /** @type {import('jsonwebtoken').JwtPayload} */ (
+      jwt.decode(tokens.refreshToken)
+    );
     await this.adapter.storeRefreshToken(
       user.id,
       tokens.refreshToken,
@@ -209,7 +211,9 @@ export class AuthManager {
       phoneNumber: user.phoneNumber,
     });
 
-    const decoded = /** @type {import('jsonwebtoken').JwtPayload} */ (jwt.decode(tokens.refreshToken));
+    const decoded = /** @type {import('jsonwebtoken').JwtPayload} */ (
+      jwt.decode(tokens.refreshToken)
+    );
     await this.adapter.storeRefreshToken(
       user.id,
       tokens.refreshToken,
@@ -266,7 +270,9 @@ export class AuthManager {
     await this.adapter.invalidateRefreshToken(oldToken);
     const decodedPayload = /** @type {any} */ (decoded);
     const tokens = this.generateTokens({ userId: decodedPayload.userId });
-    const newDecoded = /** @type {import('jsonwebtoken').JwtPayload} */ (jwt.decode(tokens.refreshToken));
+    const newDecoded = /** @type {import('jsonwebtoken').JwtPayload} */ (
+      jwt.decode(tokens.refreshToken)
+    );
     await this.adapter.storeRefreshToken(
       decodedPayload.userId,
       tokens.refreshToken,

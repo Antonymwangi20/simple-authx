@@ -17,7 +17,7 @@ describe('Social Auth Provider', () => {
         callbackURL: 'http://localhost:3000/auth/google/callback',
       });
 
-      expect(socialProvider.providers.has('google')).to.be.true; // eslint-disable-line no-unused-expressions
+      expect(socialProvider.providers.has('google')).to.be.true;
     });
 
     it('should setup multiple providers', async () => {
@@ -67,7 +67,7 @@ describe('Social Auth Provider', () => {
         await socialProvider.exchangeCode('google', 'invalid-code');
         expect.fail('Should have thrown error');
       } catch (error) {
-        expect(error).to.exist; // eslint-disable-line no-unused-expressions
+        expect(error).to.exist;
       }
     });
   });
@@ -85,9 +85,8 @@ describe('Social Auth Provider', () => {
         await socialProvider.getUserProfile('google', 'invalid-token');
         expect.fail('Should have thrown error');
       } catch (error) {
-        expect(error).to.exist; // eslint-disable-line no-unused-expressions
+        expect(error).to.exist;
       }
     });
   });
 });
-

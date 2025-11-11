@@ -51,7 +51,7 @@ describe('File Adapter', () => {
       });
 
       const user = await adapter.findUser('find@example.com');
-      expect(user).to.not.be.null; // eslint-disable-line no-unused-expressions
+      expect(user).to.not.be.null;
       expect(user).to.have.property('email', 'find@example.com');
     });
 
@@ -60,7 +60,7 @@ describe('File Adapter', () => {
       await adapter.init();
 
       const user = await adapter.findUser('nonexistent@example.com');
-      expect(user).to.be.null; // eslint-disable-line no-unused-expressions
+      expect(user).to.be.null;
     });
 
     it('should verify user credentials', async () => {
@@ -73,7 +73,7 @@ describe('File Adapter', () => {
       });
 
       const user = await adapter.verifyUser('verify@example.com', 'hashedpassword');
-      expect(user).to.not.be.null; // eslint-disable-line no-unused-expressions
+      expect(user).to.not.be.null;
     });
 
     it('should reject invalid credentials', async () => {
@@ -86,7 +86,7 @@ describe('File Adapter', () => {
       });
 
       const user = await adapter.verifyUser('verify@example.com', 'wrongpassword');
-      expect(user).to.be.null; // eslint-disable-line no-unused-expressions
+      expect(user).to.be.null;
     });
   });
 
@@ -107,7 +107,7 @@ describe('File Adapter', () => {
       await adapter.storeRefreshToken('user123', 'token123', new Date(Date.now() + 86400000));
       const tokenData = await adapter.findRefreshToken('token123');
 
-      expect(tokenData).to.not.be.null; // eslint-disable-line no-unused-expressions
+      expect(tokenData).to.not.be.null;
       expect(tokenData).to.have.property('userId', 'user123');
     });
 
@@ -116,7 +116,7 @@ describe('File Adapter', () => {
       await adapter.invalidateRefreshToken('token123');
 
       const tokenData = await adapter.findRefreshToken('token123');
-      expect(tokenData).to.be.null; // eslint-disable-line no-unused-expressions
+      expect(tokenData).to.be.null;
     });
 
     it('should invalidate all refresh tokens for user', async () => {
@@ -126,8 +126,8 @@ describe('File Adapter', () => {
 
       const token1 = await adapter.findRefreshToken('token1');
       const token2 = await adapter.findRefreshToken('token2');
-      expect(token1).to.be.null; // eslint-disable-line no-unused-expressions
-      expect(token2).to.be.null; // eslint-disable-line no-unused-expressions
+      expect(token1).to.be.null;
+      expect(token2).to.be.null;
     });
   });
 });
@@ -171,4 +171,3 @@ describe('Adapter Integration with createAuth', () => {
     }
   });
 });
-

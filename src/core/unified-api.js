@@ -3,7 +3,6 @@
  * @module core/unified-api
  */
 
-/* eslint-disable no-use-before-define */
 import { Router } from 'express';
 import cookie from 'cookie';
 import crypto from 'crypto';
@@ -64,7 +63,6 @@ import { AuditLogger } from '../security/audit.js';
  */
 export async function createAuth(config = {}) {
   // Normalize config - support legacy formats
-  // eslint-disable-next-line no-param-reassign
   const normalizedConfig = normalizeConfig(config);
 
   // 1. Setup storage adapter
@@ -830,7 +828,7 @@ function createProtectMiddleware(authManager) {
       const decoded = authManager.verifyAccess(token);
       req.user = decoded;
       return next();
-    } catch (err) {
+    } catch {
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
   };
