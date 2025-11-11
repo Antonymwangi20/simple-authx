@@ -30,13 +30,25 @@ export class SocialAuthProvider {
     const config = this.providers.get(provider);
     if (!config) throw new Error(`Provider ${provider} not configured`);
 
-    const response = await fetch(config.profileURL, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    try {
+      const response = await fetch(config.profileURL, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        signal: globalThis.AbortSignal.timeout(10000), // 10 second timeout
+      });
 
-    return response.json();
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return response.json();
+    } catch (error) {
+      if (error.name === 'TimeoutError') {
+        throw new Error('Request timeout while fetching user profile');
+      }
+      throw error;
+    }
   }
 
   getAuthorizationUrl(provider, state) {

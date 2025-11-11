@@ -1,4 +1,4 @@
-# 🔐 simple-authx v2.0.6
+# 🔐 simple-authx v2.1.0
 
 **The simplest, most powerful authentication library for Node.js**
 
