@@ -73,9 +73,9 @@ describe('Social Auth Provider', () => {
   });
 
   describe('getUserProfile', () => {
-    it('should get user profile from OAuth provider', async function() {
+    it('should get user profile from OAuth provider', async function () {
       this.timeout(5000); // Increase timeout for network request
-      
+
       await socialProvider.setupProvider('google', {
         clientId: 'test-client-id',
         clientSecret: 'test-client-secret',
