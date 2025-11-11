@@ -4,6 +4,23 @@
 
 import { Router, RequestHandler, Request, Response, NextFunction } from 'express';
 
+// ==================== Express Type Augmentation ====================
+
+/**
+ * Augment Express Request to include user property set by protect middleware
+ */
+declare global {
+  namespace Express {
+    interface Request {
+      /**
+       * Authenticated user (set by protect middleware)
+       * Contains decoded JWT token payload (userId, role, etc.)
+       */
+      user?: DecodedToken;
+    }
+  }
+}
+
 // ==================== PRIMARY API (Singleton Pattern - RECOMMENDED) ====================
 
 /**
@@ -1070,6 +1087,156 @@ export class AuditLogger {
    */
   logEvent(event: string, userId?: string, metadata?: any): Promise<void>;
 }
+
+// ==================== Utility Functions ====================
+
+/**
+ * Role-based access control middleware factory
+ * @param role - Required role
+ * @returns Express middleware that checks if user has the required role
+ * 
+ * @example
+ * import { requireRole } from 'simple-authx';
+ * 
+ * router.get('/admin', protect, requireRole('admin'), (req, res) => {
+ *   res.json({ message: 'Admin only' });
+ * });
+ */
+export function requireRole(role: string): RequestHandler;
+
+/**
+ * Multi-role access control middleware factory
+ * @param roles - Array of allowed roles
+ * @returns Express middleware that checks if user has any of the required roles
+ * 
+ * @example
+ * import { requireAnyRole } from 'simple-authx';
+ * 
+ * router.get('/moderators', protect, requireAnyRole(['admin', 'moderator']), (req, res) => {
+ *   res.json({ message: 'Admin or moderator only' });
+ * });
+ */
+export function requireAnyRole(roles: string[]): RequestHandler;
+
+/**
+ * Hash a password using the configured hasher (bcrypt or argon2)
+ * @param password - Plain text password
+ * @returns Promise resolving to hashed password
+ * 
+ * @example
+ * import { hashPassword } from 'simple-authx';
+ * 
+ * const hash = await hashPassword('myPassword123');
+ */
+export function hashPassword(password: string): Promise<string>;
+
+/**
+ * Verify a password against a hash
+ * @param password - Plain text password
+ * @param hash - Password hash to verify against
+ * @returns Promise resolving to true if password matches
+ * 
+ * @example
+ * import { verifyPassword } from 'simple-authx';
+ * 
+ * const isValid = await verifyPassword('myPassword123', storedHash);
+ */
+export function verifyPassword(password: string, hash: string): Promise<boolean>;
+
+/**
+ * Get the name of the currently configured password hasher
+ * @returns 'bcrypt' or 'argon2'
+ */
+export function hasherName(): string;
+
+// ==================== Connection Helpers ====================
+
+/**
+ * Connect to MongoDB
+ * @param uri - MongoDB connection URI
+ * @returns Promise that resolves when connected
+ * 
+ * @example
+ * import { connectMongo } from 'simple-authx';
+ * 
+ * await connectMongo('mongodb://localhost:27017/myapp');
+ */
+export function connectMongo(uri: string): Promise<void>;
+
+/**
+ * Connect to Redis
+ * @param options - Redis connection options
+ * @returns Promise resolving to Redis client
+ * 
+ * @example
+ * import { connectRedis } from 'simple-authx';
+ * 
+ * await connectRedis({ host: 'localhost', port: 6379 });
+ */
+export function connectRedis(options?: RedisConfig): Promise<any>;
+
+// ==================== Default Hooks ====================
+
+/**
+ * Default lifecycle hooks
+ * Can be used as a starting point for custom hooks
+ * 
+ * @example
+ * import { defaultHooks, createAuth } from 'simple-authx';
+ * 
+ * const auth = await createAuth({
+ *   hooks: {
+ *     ...defaultHooks,
+ *     onRegister: async (user) => {
+ *       await defaultHooks.onRegister(user);
+ *       // Custom logic
+ *     }
+ *   }
+ * });
+ */
+export const defaultHooks: HooksConfig;
+
+// ==================== Legacy API ====================
+
+/**
+ * Legacy AuthX function for backwards compatibility
+ * @deprecated Use createAuth() instead for better features and multiple storage adapters
+ * @param config - Configuration options
+ * @returns Authentication middleware and handlers
+ * 
+ * @example
+ * import AuthX from 'simple-authx';
+ * 
+ * const auth = AuthX({ secret: 'my-secret' });
+ * app.use('/auth', auth.routes);
+ */
+declare function AuthX(config?: {
+  secret?: string;
+  refreshSecret?: string;
+  accessExpiresIn?: string;
+  refreshExpiresIn?: string;
+  saltRounds?: number;
+  cookieName?: string;
+  userStore?: any;
+  tokenStore?: any;
+}): {
+  hashPassword: (password: string) => Promise<string>;
+  verifyPassword: (password: string, hash: string) => Promise<boolean>;
+  signAccess: (payload: any) => string;
+  signRefresh: (payload: any) => string;
+  verifyAccess: (token: string) => any;
+  verifyRefresh: (token: string) => any;
+  protect: RequestHandler;
+  registerHandler: (saveUserFn?: any) => RequestHandler;
+  loginHandler: (getUserFn?: any) => RequestHandler;
+  refreshHandler: RequestHandler;
+  logoutHandler: RequestHandler;
+  middleware: RequestHandler[];
+  router: Router;
+  routes: Router;
+};
+
+export default AuthX;
 
 // ==================== Exports Summary ====================
 
