@@ -55,8 +55,6 @@ const userSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  },
-  {
     collection: 'authx_users',
     strict: false, // Allow additional fields
   }
@@ -198,7 +196,7 @@ export class MongoAdapter {
     }
   }
 
-  async storeRefreshToken(userId, token, expiry) {
+  async storeRefreshToken(userId, token) {
     try {
       const hashed = hashToken(token);
 

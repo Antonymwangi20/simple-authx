@@ -20,22 +20,29 @@ import { PasswordManager } from '../security/password.js';
 import { AuditLogger } from '../security/audit.js';
 
 /**
+ * @typedef {Object} CreateAuthConfig
+ * @property {string} [storage='memory'] - Storage type: 'memory', 'file', 'mongo', 'postgres', 'redis'
+ * @property {string} [file] - File path for file storage adapter
+ * @property {string} [mongoUrl] - MongoDB connection URL
+ * @property {string} [redisUrl] - Redis connection URL
+ * @property {object} [postgres] - PostgreSQL configuration
+ * @property {string} [secret] - JWT access token secret
+ * @property {string} [refreshSecret] - JWT refresh token secret
+ * @property {string} [accessExpiresIn='15m'] - Access token expiration time (alias: accessExpiry)
+ * @property {string} [accessExpiry='15m'] - Access token expiration time (alias: accessExpiresIn)
+ * @property {string} [refreshExpiresIn='7d'] - Refresh token expiration time (alias: refreshExpiry)
+ * @property {string} [refreshExpiry='7d'] - Refresh token expiration time (alias: refreshExpiresIn)
+ * @property {object} [cookies] - Cookie configuration
+ * @property {object} [csrf] - CSRF protection configuration
+ * @property {object} [plugins] - Optional plugins (mfa, social, sessions, security, password, audit)
+ * @property {object} [userFields] - User field configuration for flexible identifiers
+ * @property {object} [hooks] - Lifecycle hooks (onRegister, onLogin, onLogout, onTokenRefresh)
+ */
+
+/**
  * Creates a unified authentication instance with flexible storage adapters
  *
- * @param {object|string} config - Configuration object or storage path
- * @param {string} [config.storage='memory'] - Storage type: 'memory', 'file', 'mongo', 'postgres', 'redis'
- * @param {string} [config.mongoUrl] - MongoDB connection URL
- * @param {string} [config.redisUrl] - Redis connection URL
- * @param {object} [config.postgres] - PostgreSQL configuration
- * @param {string} [config.secret] - JWT access token secret
- * @param {string} [config.refreshSecret] - JWT refresh token secret
- * @param {string} [config.accessExpiresIn='15m'] - Access token expiration time
- * @param {string} [config.refreshExpiresIn='7d'] - Refresh token expiration time
- * @param {object} [config.cookies] - Cookie configuration
- * @param {object} [config.csrf] - CSRF protection configuration
- * @param {object} [config.plugins] - Optional plugins (mfa, social, sessions, security, password, audit)
- * @param {object} [config.userFields] - User field configuration for flexible identifiers
- * @param {object} [config.hooks] - Lifecycle hooks (onRegister, onLogin, onLogout, onTokenRefresh)
+ * @param {CreateAuthConfig|string} config - Configuration object or storage path
  * @returns {Promise<object>} Authentication instance with routes, protect middleware, and auth methods
  *
  * @example Simple in-memory (dev/testing)

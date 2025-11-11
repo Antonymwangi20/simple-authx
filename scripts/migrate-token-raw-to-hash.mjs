@@ -3,6 +3,7 @@
 import 'dotenv/config';
 import pkg from 'pg';
 import crypto from 'crypto';
+
 const { Pool } = pkg;
 
 const pool = new Pool(
@@ -44,10 +45,11 @@ async function main() {
     const { rows } = await pool.query(
       'SELECT id, token FROM refresh_tokens WHERE token IS NOT NULL'
     );
-    for (const r of rows) {
+    await rows.reduce(async (promise, r) => {
+      await promise;
       const hash = crypto.createHash('sha256').update(r.token).digest('hex');
       await pool.query('UPDATE refresh_tokens SET token_hash=$1 WHERE id=$2', [hash, r.id]);
-    }
+    }, Promise.resolve());
 
     console.log('[migrate] Dropping raw token column...');
     await pool.query('ALTER TABLE refresh_tokens DROP COLUMN token');

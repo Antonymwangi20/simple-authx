@@ -59,5 +59,7 @@ app.listen(3000, () => {
   console.log('  GET  /profile           - Get user profile');
   console.log('  GET  /admin             - Admin only route');
   console.log('  POST /auth/mfa/enable   - Enable 2FA');
-  process.env.GOOGLE_CLIENT_ID && console.log('  GET  /auth/google        - Google Sign In');
+  if (process.env.GOOGLE_CLIENT_ID) {
+    console.log('  GET  /auth/google        - Google Sign In');
+  }
 });

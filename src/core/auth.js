@@ -9,6 +9,17 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 
 /**
+ * @typedef {Object} AuthManagerOptions
+ * @property {any} [adapter] - Database adapter instance
+ * @property {string} [secret] - JWT secret for access tokens
+ * @property {string} [refreshSecret] - JWT secret for refresh tokens
+ * @property {string} [accessExpiry='15m'] - Access token expiration
+ * @property {string} [refreshExpiry='7d'] - Refresh token expiration
+ * @property {Object} [hooks] - Event hooks for auth lifecycle
+ * @property {Object} [config] - User field configuration
+ */
+
+/**
  * Core authentication manager class
  * Handles user registration, login, token generation, and verification
  *
@@ -25,14 +36,7 @@ import crypto from 'crypto';
 export class AuthManager {
   /**
    * Creates a new AuthManager instance
-   * @param {Object} options - Configuration object
-   * @param {Object} options.adapter - Storage adapter (must implement findUser, createUser, verifyUser, etc.)
-   * @param {string} options.secret - JWT access token secret
-   * @param {string} options.refreshSecret - JWT refresh token secret
-   * @param {string} [options.accessExpiry='15m'] - Access token expiration time
-   * @param {string} [options.refreshExpiry='7d'] - Refresh token expiration time
-   * @param {Object} [options.hooks] - Lifecycle hooks
-   * @param {Object} [options.config] - User field configuration
+   * @param {AuthManagerOptions} [options] - Configuration options
    */
   constructor(options = {}) {
     this.secret = options.secret || process.env.JWT_SECRET || 'dev_secret';
@@ -53,10 +57,12 @@ export class AuthManager {
    * @returns {{accessToken: string, refreshToken: string}} Token pair
    */
   generateTokens(payload) {
+    // @ts-ignore - Type assertion for JWT secret
     const accessToken = jwt.sign(payload, this.secret, { expiresIn: this.accessExpiry });
     const jti =
       (crypto.randomUUID && crypto.randomUUID()) || crypto.randomBytes(16).toString('hex');
     const refreshPayload = { ...payload, jti };
+    // @ts-ignore - Type assertion for JWT secret
     const refreshToken = jwt.sign(refreshPayload, this.refreshSecret, {
       expiresIn: this.refreshExpiry,
     });
@@ -65,11 +71,7 @@ export class AuthManager {
 
   /**
    * Registers a new user with flexible identifiers (username, email, or phoneNumber)
-   * @param {string|Object} usernameOrData - Username string (legacy) or userData object (new)
-   * @param {string} [usernameOrData.username] - Username
-   * @param {string} [usernameOrData.email] - Email address
-   * @param {string} [usernameOrData.phoneNumber] - Phone number
-   * @param {string} usernameOrData.password - Password (required)
+   * @param {string|{username?: string, email?: string, phoneNumber?: string, password: string}} usernameOrData - Username string (legacy) or userData object (new)
    * @param {string} [password] - Password (only used in legacy mode)
    * @returns {Promise<Object>} Object containing user and tokens {user, accessToken, refreshToken}
    * @throws {Error} If required fields are missing or user already exists
@@ -154,7 +156,7 @@ export class AuthManager {
     console.log('[AuthManager] User created:', user.id);
 
     const tokens = this.generateTokens({ userId: user.id });
-    const decoded = jwt.decode(tokens.refreshToken);
+    const decoded = /** @type {import('jsonwebtoken').JwtPayload} */ (jwt.decode(tokens.refreshToken));
     await this.adapter.storeRefreshToken(
       user.id,
       tokens.refreshToken,
@@ -207,7 +209,7 @@ export class AuthManager {
       phoneNumber: user.phoneNumber,
     });
 
-    const decoded = jwt.decode(tokens.refreshToken);
+    const decoded = /** @type {import('jsonwebtoken').JwtPayload} */ (jwt.decode(tokens.refreshToken));
     await this.adapter.storeRefreshToken(
       user.id,
       tokens.refreshToken,
@@ -251,7 +253,7 @@ export class AuthManager {
       console.log('[AuthManager] Token reuse detected, revoking all tokens');
       try {
         if (this.adapter.invalidateAllRefreshTokens) {
-          await this.adapter.invalidateAllRefreshTokens(decoded.userId);
+          await this.adapter.invalidateAllRefreshTokens(/** @type {any} */ (decoded).userId);
         }
       } catch (e) {
         if (this.hooks && this.hooks.onError) await this.hooks.onError(e);
@@ -262,10 +264,11 @@ export class AuthManager {
     // Rotate token
     console.log('[AuthManager] Rotating refresh token');
     await this.adapter.invalidateRefreshToken(oldToken);
-    const tokens = this.generateTokens({ userId: decoded.userId });
-    const newDecoded = jwt.decode(tokens.refreshToken);
+    const decodedPayload = /** @type {any} */ (decoded);
+    const tokens = this.generateTokens({ userId: decodedPayload.userId });
+    const newDecoded = /** @type {import('jsonwebtoken').JwtPayload} */ (jwt.decode(tokens.refreshToken));
     await this.adapter.storeRefreshToken(
-      decoded.userId,
+      decodedPayload.userId,
       tokens.refreshToken,
       new Date(newDecoded.exp * 1000)
     );

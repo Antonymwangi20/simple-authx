@@ -242,7 +242,7 @@ app.get('/audit/logs', protect, requireRole('admin'), async (req, res) => {
     const logs = await auth.audit.query({
       userId: req.query.userId,
       event: req.query.event,
-      startDate: req.query.startDate ? new Date(req.query.startDate) : undefined,
+      startDate: req.query.startDate ? new Date(String(req.query.startDate)) : undefined,
     });
 
     res.json({ logs });

@@ -4,7 +4,7 @@ export function requireRole(role) {
     if (!user.role || user.role !== role) {
       return res.status(403).json({ error: 'Forbidden' });
     }
-    next();
+    return next();
   };
 }
 
@@ -14,6 +14,6 @@ export function requireAnyRole(roles = []) {
     if (!user.role || !roles.includes(user.role)) {
       return res.status(403).json({ error: 'Forbidden' });
     }
-    next();
+    return next();
   };
 }

@@ -1,6 +1,7 @@
-import { hashPassword, verifyPassword } from '../utils/hash.js';
 import crypto from 'crypto';
 import pkg from 'pg';
+import { hashPassword, verifyPassword } from '../utils/hash.js';
+
 const { Pool } = pkg;
 
 export class PostgresAdapter {

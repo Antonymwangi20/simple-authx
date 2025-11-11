@@ -23,7 +23,7 @@ export function RedisTokenStore(prefix = 'authx:refresh:') {
 
   return {
     async get(username) {
-      return await client.get(prefix + username);
+      return client.get(prefix + username);
     },
     async set(username, refreshToken, ttlSeconds = 7 * 24 * 60 * 60) {
       const hashedToken = hashToken(refreshToken);
@@ -31,12 +31,12 @@ export function RedisTokenStore(prefix = 'authx:refresh:') {
       return refreshToken;
     },
     async delete(username) {
-      return await client.del(prefix + username);
+      return client.del(prefix + username);
     },
     async rotate(username, oldToken, newToken, ttlSeconds = 7 * 24 * 60 * 60) {
       const stored = await client.get(prefix + username);
       if (!stored || stored !== hashToken(oldToken)) return false; // reject reused or invalid token
-      await this.set(username, newToken, { EX: ttlSeconds });
+      await this.set(username, newToken, ttlSeconds);
       return true;
     },
   };

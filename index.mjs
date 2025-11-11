@@ -17,7 +17,7 @@ import cookieParser from 'cookie-parser';
 
 /**
  * Creates a new authentication instance with unified API
- * @see ./src/core/unified-api.js for full documentation
+ * @see {./src/core/unified-api.js} for full documentation
  */
 export { createAuth } from './src/core/unified-api.js';
 
@@ -60,6 +60,8 @@ export { hashPassword, verifyPassword } from './src/utils/hash.js';
  * @param {string} [config.refreshExpiresIn='7d'] - Refresh token expiration time
  * @param {number} [config.saltRounds=10] - Bcrypt salt rounds
  * @param {string} [config.cookieName='refreshToken'] - Name of the refresh token cookie
+ * @param {Object} [config.userStore] - Custom user storage implementation
+ * @param {Object} [config.tokenStore] - Custom token storage implementation
  * @returns {Object} Authentication middleware and handlers
  * @example
  * const auth = AuthX({ secret: 'my-secret', refreshSecret: 'my-refresh-secret' });
@@ -111,7 +113,7 @@ export default function AuthX(config = {}) {
    * Hashes a password using bcrypt
    * @private
    * @param {string} password - Password to hash
-   * @returns {string} Hashed password
+   * @returns {Promise<string>} Hashed password
    */
   async function hashPassword(password) {
     const salt = await bcrypt.genSalt(saltRounds);
@@ -123,7 +125,7 @@ export default function AuthX(config = {}) {
    * @private
    * @param {string} password - Password to verify
    * @param {string} hash - Hash to verify against
-   * @returns {boolean} Whether the password matches the hash
+   * @returns {Promise<boolean>} Whether the password matches the hash
    */
   async function verifyPassword(password, hash) {
     return bcrypt.compare(password, hash);
@@ -136,6 +138,7 @@ export default function AuthX(config = {}) {
    * @returns {string} Signed JWT access token
    */
   function signAccess(payload) {
+    // @ts-ignore - Type assertion for JWT secret
     return jwt.sign(payload, secret, { expiresIn: accessExpiresIn });
   }
 
@@ -146,6 +149,7 @@ export default function AuthX(config = {}) {
    * @returns {string} Signed JWT refresh token
    */
   function signRefresh(payload) {
+    // @ts-ignore - Type assertion for JWT secret
     return jwt.sign(payload, refreshSecret, { expiresIn: refreshExpiresIn });
   }
 

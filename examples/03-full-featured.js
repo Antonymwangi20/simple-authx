@@ -281,7 +281,6 @@ app.post('/api/password/strength', (req, res) => {
 app.post('/api/password/change', auth.protect, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
-    const { userId } = req.user;
 
     if (!currentPassword || !newPassword) {
       return res.status(400).json({ error: 'currentPassword and newPassword required' });
@@ -318,8 +317,8 @@ app.get('/api/audit/logs', auth.protect, async (req, res) => {
     const logs = await auth.audit.query({
       userId,
       event,
-      startDate: startDate ? new Date(startDate) : undefined,
-      endDate: endDate ? new Date(endDate) : undefined,
+      startDate: startDate ? new Date(String(startDate)) : undefined,
+      endDate: endDate ? new Date(String(endDate)) : undefined,
     });
 
     res.json({ logs });

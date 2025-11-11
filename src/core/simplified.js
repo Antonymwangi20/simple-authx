@@ -10,46 +10,46 @@ export async function createSimplifiedAuth(config = {}) {
   const router = Router();
 
   // Normalize string config to file path for convenience
-  if (typeof config === 'string') {
-    config = { file: config };
-  }
+  const normalizedConfig = typeof config === 'string' ? { file: config } : config;
 
   // Choose adapter: Mongo, Postgres, Redis, or File (default)
   let adapter;
-  if (config.mongodb) {
-    await connectMongo(config.mongodb);
+  if (normalizedConfig.mongodb) {
+    await connectMongo(normalizedConfig.mongodb);
     adapter = new MongoAdapter();
-  } else if (config.postgres) {
-    adapter = new PostgresAdapter(config.postgres);
-  } else if (config.redis) {
-    await connectRedis(config.redis);
-    const userStore = new FileAdapter(config.file || './data/auth-data.json');
+  } else if (normalizedConfig.postgres) {
+    adapter = new PostgresAdapter(normalizedConfig.postgres);
+  } else if (normalizedConfig.redis) {
+    await connectRedis(normalizedConfig.redis);
+    const userStore = new FileAdapter(normalizedConfig.file || './data/auth-data.json');
     await userStore.init();
-    adapter = new RedisAdapter(userStore, { prefix: config.prefix || 'authx:refresh:' });
+    adapter = new RedisAdapter(userStore, { prefix: normalizedConfig.prefix || 'authx:refresh:' });
   } else {
-    adapter = new FileAdapter(config.file || './data/auth-data.json');
+    adapter = new FileAdapter(normalizedConfig.file || './data/auth-data.json');
     await adapter.init();
   }
 
   const auth = new AuthManager({
     adapter,
-    secret: config.secret || process.env.JWT_SECRET || 'dev_secret',
-    refreshSecret: config.refreshSecret || process.env.JWT_REFRESH_SECRET || 'dev_refresh_secret',
-    accessExpiry: config.accessExpiresIn || '15m',
-    refreshExpiry: config.refreshExpiresIn || '7d',
+    secret: normalizedConfig.secret || process.env.JWT_SECRET || 'dev_secret',
+    refreshSecret:
+      normalizedConfig.refreshSecret || process.env.JWT_REFRESH_SECRET || 'dev_refresh_secret',
+    accessExpiry: normalizedConfig.accessExpiresIn || '15m',
+    refreshExpiry: normalizedConfig.refreshExpiresIn || '7d',
   });
 
-  const useCookies = !!(config.cookies && config.cookies.refresh);
-  const cookieName = (config.cookies && config.cookies.name) || 'refreshToken';
+  const useCookies = !!(normalizedConfig.cookies && normalizedConfig.cookies.refresh);
+  const cookieName = (normalizedConfig.cookies && normalizedConfig.cookies.name) || 'refreshToken';
   const cookieOptions = {
     httpOnly: true,
-    secure: !!(config.cookies && config.cookies.secure),
-    sameSite: (config.cookies && config.cookies.sameSite) || 'strict',
+    secure: !!(normalizedConfig.cookies && normalizedConfig.cookies.secure),
+    sameSite: (normalizedConfig.cookies && normalizedConfig.cookies.sameSite) || 'strict',
     path: '/',
   };
-  const csrfEnabled = !!(config.csrf && config.csrf.enabled);
-  const csrfCookieName = (config.csrf && config.csrf.cookieName) || 'csrfToken';
-  const csrfHeaderName = (config.csrf && config.csrf.headerName) || 'x-csrf-token';
+  const csrfEnabled = !!(normalizedConfig.csrf && normalizedConfig.csrf.enabled);
+  const csrfCookieName = (normalizedConfig.csrf && normalizedConfig.csrf.cookieName) || 'csrfToken';
+  const csrfHeaderName =
+    (normalizedConfig.csrf && normalizedConfig.csrf.headerName) || 'x-csrf-token';
 
   // Protect middleware using access token
   const protect = (req, res, next) => {

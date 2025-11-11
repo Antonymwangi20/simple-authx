@@ -1,0 +1,18 @@
+# Generated documentation files
+docs/
+coverage/
+node_modules/
+
+# Build outputs
+dist/
+build/
+*.min.js
+
+# Test coverage
+.nyc_output/
+
+# Config files that may have different styles
+*.config.js
+.eslintrc.json
+.prettierrc
+

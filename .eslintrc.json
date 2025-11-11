@@ -9,10 +9,12 @@
     "ecmaVersion": 2022,
     "sourceType": "module"
   },
+  "ignorePatterns": ["docs/**", "coverage/**", "node_modules/**", "*.min.js"],
   "rules": {
     "no-console": "off",
     "import/extensions": ["error", "ignorePackages"],
     "import/prefer-default-export": "off",
+    "import/no-unresolved": ["error", { "ignore": ["^simple-authx$"] }],
     "max-len": [
       "error",
       {
@@ -27,6 +29,44 @@
         "allow": ["_map", "_id"]
       }
     ],
-    "class-methods-use-this": "off"
-  }
+    "class-methods-use-this": "off",
+    "consistent-return": ["warn", { "treatUndefinedAsUnspecified": true }],
+    "no-param-reassign": ["error", { "props": false }]
+  },
+  "overrides": [
+    {
+      "files": ["examples/**/*.js"],
+      "rules": {
+        "import/no-unresolved": "off",
+        "import/no-duplicates": "off",
+        "consistent-return": "off",
+        "no-unused-vars": ["warn", { "argsIgnorePattern": "^next$" }]
+      }
+    },
+    {
+      "files": ["src/config/env.js"],
+      "rules": {
+        "import/no-unresolved": "off"
+      }
+    },
+    {
+      "files": ["src/core/auth.js"],
+      "rules": {
+        "no-restricted-syntax": "off",
+        "no-await-in-loop": "off"
+      }
+    },
+    {
+      "files": ["src/core/simplified.js", "src/security/security.js"],
+      "rules": {
+        "consistent-return": "off"
+      }
+    },
+    {
+      "files": ["tests/**/*.js"],
+      "rules": {
+        "func-names": "off"
+      }
+    }
+  ]
 }
